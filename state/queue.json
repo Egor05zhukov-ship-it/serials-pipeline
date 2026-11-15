@@ -1,0 +1,23 @@
+{
+  "_about": "Очередь серий. Меняют только ночные агенты и основная сессия. status: draft (пишется) | ready (собрана, проверена, ждёт публикации) | published.",
+  "voice": "piper",
+  "accounts": {
+    "ty.by.vyzhil": {
+      "name": "Ты бы выжил?",
+      "series": "trassa",
+      "browser": "chrome",
+      "session": true,
+      "slots": ["08:30"],
+      "launchExtraSlot": "18:30"
+    },
+    "tretye.pravilo": {
+      "name": "Третье правило",
+      "series": "nochnaya-smena",
+      "browser": "chrome",
+      "session": false,
+      "sessionNote": "В Chrome в этот аккаунт никто не вошёл. Публиковать нельзя, пока пользователь сам не войдёт в него в Chrome. Пароли агент не вводит.",
+      "slots": ["12:30"]
+    }
+  },
+  "episodes": []
+}
