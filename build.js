@@ -61,7 +61,7 @@ console.log('');
 // ---------- 2. timeline ----------
 const shots = ep.shots.map((s, i) => ({ i, id: s.id, start: sent[s.from].start, end: ep.shots[i + 1] ? sent[ep.shots[i + 1].from].start : sent[sent.length - 1].end + (ep.tail ?? 0.6) }));
 const endCardStart = shots[shots.length - 1].end, total = endCardStart + (ep.endCardDur ?? 2.5);
-const tl = { fps: FPS, total, endCardStart, sent: sent.map(({ start, end }) => ({ start, end })), shots, chunks: planCaptions(units, sent) };
+const tl = { fps: FPS, total, endCardStart, sent: sent.map(({ start, end }) => ({ start, end })), shots, chunks: planCaptions(units, sent, ep.tail ?? 0.6) };
 fs.writeFileSync(path.join(TMP, 'timeline.json'), JSON.stringify(tl));
 console.log(`length ${total.toFixed(1)} s, ${shots.length} shots, ${tl.chunks.length} caption chunks`);
 for (const s of shots) console.log(`  ${s.start.toFixed(1).padStart(5)}-${s.end.toFixed(1).padStart(5)}  ${s.id}`);
@@ -82,10 +82,15 @@ const voice = path.join(TMP, 'voice.wav'), bed = path.join(TMP, 'bed.wav'), sfx 
   } else ff(['-f', 'lavfi', '-i', `anullsrc=r=48000:cl=mono`, '-t', String(total), sfx]);
   ff(['-i', voice, '-i', bed, '-i', sfx, '-filter_complex', `[1]volume=${ep.bedVolume ?? 0.3}[b];[2]volume=${ep.sfxVolume ?? 0.8}[s];[0][b][s]amix=inputs=3:normalize=0`, '-t', String(total), mix]);
   // measure integrated loudness, then bring it to the target with plain gain and a limiter
-  const m = [...ff(['-i', mix, '-af', 'ebur128', '-f', 'null', '-'], true).matchAll(/I:\s+(-?[\d.]+) LUFS/g)].pop();
-  const gain = LUFS - Number(m[1]);
-  ff(['-i', mix, '-af', `volume=${gain.toFixed(2)}dB,alimiter=limit=0.89:level=false`, '-ar', '48000', final]);
-  console.log(`audio: ${Number(m[1]).toFixed(1)} LUFS before, gain ${gain.toFixed(1)} dB`);
+  const loud = (f) => Number([...ff(['-i', f, '-af', 'ebur128', '-f', 'null', '-'], true).matchAll(/I:\s+(-?[\d.]+) LUFS/g)].pop()[1]);
+  let gain = LUFS - loud(mix);
+  for (let pass = 0; pass < 3; pass++) { // the limiter eats a little level, so correct until it lands
+    ff(['-i', mix, '-af', `volume=${gain.toFixed(2)}dB,alimiter=limit=0.89:level=false`, '-ar', '48000', final]);
+    const off = LUFS - loud(final);
+    if (Math.abs(off) < 0.15) break;
+    gain += off;
+  }
+  console.log(`audio: gain ${gain.toFixed(1)} dB -> ${loud(final).toFixed(1)} LUFS`);
 }
 
 // ---------- 4. picture ----------

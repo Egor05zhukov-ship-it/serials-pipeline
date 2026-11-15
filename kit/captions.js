@@ -70,7 +70,8 @@ const toLines = (ws) => {
 const weight = (ws) => ws.reduce((s, x) => s + x.w.replace(/[^А-ЯЁA-Z0-9]/g, '').length + (x.end ? 7 : x.soft ? 3 : 0), 0) + 1;
 
 // units: [{text}], sent: [{start,end}] -> [{start,end,lines:[[{w,hi}]]}]
-export function planCaptions(units, sent) {
+// lastHold: how long the very last chunk stays after the speech ends (the final line lingers)
+export function planCaptions(units, sent, lastHold = 0.3) {
   const out = [];
   units.forEach((u, i) => {
     const chunks = chunkWords(tokenize(u.text));
@@ -82,8 +83,7 @@ export function planCaptions(units, sent) {
       t += d;
     });
     // hold the last chunk through the pause, but not into the next unit
-    const next = sent[i + 1] ? sent[i + 1].start : sent[i].end + 0.3;
-    out[out.length - 1].end = Math.min(next, sent[i].end + 0.3);
+    out[out.length - 1].end = sent[i + 1] ? Math.min(sent[i + 1].start, sent[i].end + 0.3) : sent[i].end + lastHold;
   });
   return out;
 }

@@ -16,21 +16,21 @@ const desk = (t) => `<rect width="1080" height="1920" fill="${C.counterFront}"/>
 export default {
   series: 'Ночная смена',
   episode: 1,
-  gap: 0.16,
-  tail: 0.7,
+  gap: 0.12,
+  tail: 1.2, // the last line stays on screen this long after the voice ends
   bedVolume: 0.3,
   narration: [
     'В три ночи | в мой пункт выдачи | пришёл *заказ* | на моё имя.',
     'Я ничего не *заказывал*.',
-    { text: 'А коробка *тёплая*.', gap: 0.35 },
+    { text: 'А коробка *тёплая*.', gap: 0.3 },
     'Я тут *вторую* ночь.',
     'Прошлая сменщица, *Вера*, | уволилась | одним днём.',
     { text: 'И оставила на кассе записку. *Три* правила.', gap: 0.3 },
     '*Первое*. После полуночи | дверь не открывай. Выдавай | через окошко.',
     '*Второе*. Придут без кода — | не спорь. Отдай любую коробку | с нижней полки.',
     { text: '*Третье*. Заказ на своё имя | не открывай. И не возвращай.', gap: 0.45 },
-    { text: 'Нижняя полка *пустая*. Я проверил ещё вечером.', gap: 0.5 },
-    { text: 'Три ноль семь. *Стук* в окошко.', gap: 0.55 },
+    { text: 'Нижняя полка *пустая*. Я проверил ещё вечером.', gap: 0.45 },
+    { text: 'Три ноль семь. *Стук* в окошко.', gap: 0.5 },
     'Женщина в капюшоне. Лица *не видно*.',
     { text: '— Мне заказ. *Без кода*.', gap: 0.4 },
     'На стойке | одна коробка. *Моя*.',
@@ -38,7 +38,7 @@ export default {
     'Женщина кладёт | ладонь на стекло. На запястье бейдж. «*Вера*. Пункт выдачи».',
     { text: 'Она смотрит | на коробку | и *улыбается*.', gap: 0.35 },
     { text: '— Ты ведь её уже *открыл*.', gap: 0.5 },
-    { text: 'Я опускаю глаза. Скотч на коробке *разрезан*.', gap: 0.7 },
+    { text: 'Я опускаю глаза. Скотч на коробке *разрезан*.', gap: 0.6 },
     'Я её *не трогал*.',
   ],
   sfx: [{ type: 'hit', sentence: 19, at: 0, vol: 0.9 }], // sentence = narration unit, at = 0..1 inside it
@@ -120,8 +120,8 @@ export default {
       id: 'palm', from: 15, // palm on the glass, then the badge on the wrist
       draw(p, t, c) {
         const a = easeOut(clamp(t / 0.35)), z = easeInOut(clamp((c.sp(15) - 0.42) / 0.25));
-        const scene = glassWall() + `<g opacity="${a}" transform="translate(0 ${(1 - a) * 120})">${palm({ x: 430, y: 780, s: 1.45, press: a, glow: z * (0.6 + 0.4 * Math.sin(t * 6)) })}</g>`;
-        return cam(scene, { s: lerp(1, 1.5, z) + 0.04 * p, cx: lerp(540, 705, z), cy: lerp(960, 1143, z), x: lerp(0, -165, z), y: lerp(0, -243, z) });
+        const scene = glassWall() + `<g opacity="${a}" transform="translate(0 ${(1 - a) * 120})">${palm({ x: 430, y: 710, s: 1.45, press: a, glow: z * (0.6 + 0.4 * Math.sin(t * 6)) })}</g>`;
+        return cam(scene, { s: lerp(1, 1.5, z) + 0.04 * p, cx: lerp(540, 705, z), cy: lerp(960, 1073, z), x: lerp(0, -165, z), y: lerp(0, -173, z) });
       },
     },
     {
