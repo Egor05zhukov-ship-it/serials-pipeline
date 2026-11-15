@@ -1,0 +1,13 @@
+{
+  "name": "serials-pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Renders short vertical animated episodes: narration -> audio -> SVG frames -> mp4",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}
