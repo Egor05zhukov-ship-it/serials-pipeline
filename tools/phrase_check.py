@@ -59,7 +59,13 @@ def main():
         fw = WhisperModel(os.environ.get("WHISPER_MODEL", "large-v3-turbo"), device="cpu", compute_type="int8")
 
         def hear(wav):
-            return " ".join(seg.text for seg in fw.transcribe(wav, language="ru", beam_size=5)[0]).strip()
+            # samples are read here and handed over as an array: the library's own file reader broke on the runner
+            import soundfile as sf
+
+            mono = wav + ".16k.wav"
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", wav, "-ar", "16000", "-ac", "1", mono], check=True)
+            audio, _ = sf.read(mono, dtype="float32")
+            return " ".join(seg.text for seg in fw.transcribe(audio, language="ru", beam_size=5)[0]).strip()
 
     out_dir = os.path.join(work, "phrases")
     os.makedirs(out_dir, exist_ok=True)

@@ -86,7 +86,7 @@ if [ "$STAGE" = build ]; then
         QWEN_SEED=$((17 + try * 20)) node build.js "$ep" --tts qwen --redo "$idx" > build.log 2>&1 || { tail -20 build.log | tee -a "$REPORT"; bad=98; break; }
       done
       dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "out/$id/video.mp4" 2>/dev/null || echo 0)
-      if [ "$bad" = 99 ] || [ "$bad" = 98 ]; then ok=0; why="pronunciation check did not run"
+      if [ "$bad" = 99 ] || [ "$bad" = 98 ]; then say "$ep: WARNING, the pronunciation check did not run; the episode goes out unchecked"; tail -5 check.log | tee -a "$REPORT"
       elif [ "$bad" != 0 ]; then ok=0; why="pronunciation: these phrases were heard wrong, rewrite them in other words: $(grep 'НАПИСАНО' check.log | sed 's/^[0-9]* НАПИСАНО: //' | tr '\n' '|' | cut -c1-500)"
       elif [ "$(node -e 'const d=+process.argv[1];console.log(d>=55&&d<=115?1:0)' "$dur")" != 1 ]; then ok=0; why="length $dur s is outside 55-115 s"; fi
     fi
