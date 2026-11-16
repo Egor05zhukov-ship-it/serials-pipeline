@@ -135,9 +135,21 @@ try {
       }
     }));
     console.log(`\rframes ${frames}/${frames} in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
-    ff(['-framerate', String(FPS), '-i', path.join(dir, '%06d.jpg'), '-i', final, '-vf', 'scale=in_range=full:out_range=tv,format=yuv420p', '-c:v', 'libx264', '-preset', 'medium', '-crf', '18',
-      '-color_range', 'tv', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2', '-movflags', '+faststart', '-shortest', path.join(OUT, 'video.mp4')]);
-    ff(['-i', path.join(OUT, 'video.mp4'), '-vf', 'fps=1/3,scale=216:-1,tile=8x3', '-frames:v', '1', '-q:v', '3', path.join(OUT, 'contact.jpg')]);
+    const mp4 = path.join(OUT, 'video.mp4');
+    const encode = (rate, tail) => ff(['-framerate', String(FPS), '-i', path.join(dir, '%06d.jpg'), '-i', final, '-vf', 'scale=in_range=full:out_range=tv,format=yuv420p', '-c:v', 'libx264', '-preset', 'medium', ...rate,
+      '-color_range', 'tv', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', ...tail]);
+    const sound = ['-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2', '-movflags', '+faststart', '-shortest', mp4];
+    encode(['-crf', '18'], sound);
+    // The publishing tool takes files up to 10 MB. If CRF 18 gives more (a lot of motion, a slower voice),
+    // the picture is encoded again in two passes at the bitrate that fits. Smaller files are left as they are.
+    const MAX_MB = Number(process.env.MAX_MB || 9.5);
+    if (fs.statSync(mp4).size > MAX_MB * 1e6) {
+      const kbps = Math.floor((MAX_MB * 0.97 * 8000) / total - 196), log = path.join(TMP, 'x264');
+      encode(['-b:v', `${kbps}k`, '-pass', '1', '-passlogfile', log], ['-an', '-f', 'null', '-']);
+      encode(['-b:v', `${kbps}k`, '-pass', '2', '-passlogfile', log], sound);
+      console.log(`size: over ${MAX_MB} MB at CRF 18, picture refitted to ${kbps} kbps -> ${(fs.statSync(mp4).size / 1e6).toFixed(2)} MB`);
+    }
+    ff(['-i', mp4, '-vf', 'fps=1/3,scale=216:-1,tile=8x3', '-frames:v', '1', '-q:v', '3', path.join(OUT, 'contact.jpg')]);
     fs.rmSync(dir, { recursive: true, force: true });
     const pg = pages[0];
     await pg.evaluate(() => window.cover());

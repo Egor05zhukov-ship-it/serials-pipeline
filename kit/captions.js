@@ -87,3 +87,14 @@ export function planCaptions(units, sent, lastHold = 0.3) {
   });
   return out;
 }
+
+// Draws one caption chunk for an episode that has a theme (see kit/stage.html). The defaults repeat the
+// look of caption() in kit/index.js, so a theme names only what differs: { hi: '#FF7A1A' }.
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const r2 = (x) => Math.round(x * 100) / 100;
+export function drawCaption(ch, t, { y = 1340, size = 74, hi = '#FF4338', fill = '#FFFFFF', stroke = '#05080F' } = {}) {
+  const a = Math.min(1, Math.max(0, (t - ch.start) / 0.09)), sc = 0.9 + 0.1 * (1 - Math.pow(1 - a, 3)), lh = size * 1.18;
+  const y0 = y - ((ch.lines.length - 1) * lh) / 2;
+  const lines = ch.lines.map((ln, i) => `<text x="540" y="${r2(y0 + i * lh)}" text-anchor="middle" font-family="Mont" font-weight="800" font-size="${size}" letter-spacing="1" paint-order="stroke" stroke="${stroke}" stroke-width="${r2(size * 0.24)}" stroke-linejoin="round">${ln.map((w) => `<tspan fill="${w.hi ? hi : fill}">${esc(w.w)}</tspan>`).join(' ')}</text>`).join('');
+  return `<g transform="translate(540 ${y}) scale(${r2(sc)}) translate(-540 ${-y})" opacity="${r2(a)}">${lines}</g>`;
+}

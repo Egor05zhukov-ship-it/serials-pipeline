@@ -9,12 +9,23 @@
 <svg id="stage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920"></svg>
 <script type="module">
   import { frame, cover } from '/kit/index.js';
+  import { drawCaption } from '/kit/captions.js';
   const q = new URLSearchParams(location.search);
   const ep = (await import(q.get('ep'))).default;
   const tl = await (await fetch(q.get('tl'))).json();
   const stage = document.getElementById('stage');
-  window.seek = (t) => { stage.innerHTML = frame(ep, tl, t); };
-  window.cover = () => { stage.innerHTML = cover(ep.cover); };
+  // Optional per-episode theme: { caption: { hi, fill, stroke }, endCard(o), cover(o) }, e.g. theme in kit/trassa.js.
+  // An episode without a theme is drawn by kit/index.js alone, exactly as before.
+  const th = ep.theme;
+  const shotOnly = { ...tl, chunks: [], endCardStart: Infinity }; // with this timeline frame() draws just the shot
+  const themed = (t) => {
+    if (t >= tl.endCardStart) return th.endCard ? th.endCard({ p: (t - tl.endCardStart) / (tl.total - tl.endCardStart), ...(ep.endCard || {}) }) : frame(ep, tl, t);
+    const ch = tl.chunks.find((c) => t >= c.start && t < c.end);
+    const sh = tl.shots.find((s) => t >= s.start && t < s.end) || tl.shots[tl.shots.length - 1];
+    return frame(ep, shotOnly, t) + (ch ? drawCaption(ch, t, { ...th.caption, ...ep.shots[sh.i].caption }) : '');
+  };
+  window.seek = (t) => { stage.innerHTML = th ? themed(t) : frame(ep, tl, t); };
+  window.cover = () => { stage.innerHTML = (th?.cover || cover)(ep.cover); };
   await Promise.all([document.fonts.load('800 60px Mont', 'АЯ'), document.fonts.load('600 40px Mont', 'АЯ')]);
   window.ready = true;
 </script>
