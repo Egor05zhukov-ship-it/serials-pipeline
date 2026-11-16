@@ -407,7 +407,7 @@ export const hand = ({ x, y, s = 1, frost = 0 }) => {
 // K: { jacket, arm: 'wheel' | 'key' | 'back', look, eyes, sleepy, worry }, A: { eyes, tilt, cover 0..1, look }.
 // The scene behind (sky) and the snow in front are drawn by the caller.
 const limb = (pts, w, col) => `<polyline points="${pts.map((p) => p.join(',')).join(' ')}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
-export const cabin = ({ t = 0, dome = 0.7, dash = 0, key = 0, warm = 0, tilt = 4, K = {}, A = {}, exhaust = true, phone = false, inner = '' } = {}) => {
+export const cabin = ({ t = 0, dome = 0.7, dash = 0, key = 0, warm = 0, tilt = 4, K = {}, A = {}, exhaust = true, phone = false, gap = 0, inner = '' } = {}) => {
   const far = ['M118 600 L288 600 L288 796 L118 796 Z', 'M312 600 L440 600 L440 796 L312 796 Z', 'M486 600 L846 600 L924 796 L486 796 Z'];
   const frost = (x, y, sx = 1) => `<path d="M${x} ${y} l${70 * sx} 0 q${-40 * sx} 14 ${-48 * sx} 30 q${-10 * sx} 20 ${-22 * sx} 44 Z" fill="${T.snow}" opacity="0.22"/>`;
   const wall = mix(mix(T.cabin, '#2A4468', 0.55 * dome), T.cabinWarm, 0.75 * warm), wall2 = mix(mix(T.cabinLight, '#375A86', 0.55 * dome), '#74452A', 0.75 * warm);
@@ -424,6 +424,7 @@ export const cabin = ({ t = 0, dome = 0.7, dash = 0, key = 0, warm = 0, tilt = 4
   ${far.map((d) => `<path d="${d}" fill="#07121F"/>`).join('')}
   <clipPath id="tFar"><path d="${far.join(' ')}"/></clipPath><g clip-path="url(#tFar)">${snowfall({ t, count: 16, y0: 590, y1: 800, seed: 31, opacity: 0.6 })}</g>
   ${frost(118, 600)}${frost(312, 600)}${frost(486, 600)}${frost(288, 600, -1)}${frost(440, 600, -1)}
+  ${gap > 0 ? `<path d="M486 600 L846 600 L${n(846 + 8 * gap)} ${n(600 + 20 * gap)} L486 ${n(600 + 20 * gap)} Z" fill="#3A6EA5"/><rect x="560" y="588" width="210" height="${n(24 + 20 * gap)}" rx="16" fill="none" stroke="${T.orange}" stroke-width="5" opacity="${n(0.9 * gap)}"/>` : ''}
   <rect x="440" y="566" width="46" height="534" fill="${wall2}"/><rect x="300" y="800" width="5" height="300" fill="${wall}"/>
   <rect x="340" y="846" width="60" height="12" rx="6" fill="${wall}"/><rect x="560" y="846" width="60" height="12" rx="6" fill="${wall}"/>`;
   // dome lamp and its light
@@ -590,7 +591,7 @@ export const theme = { caption: { hi: T.orange, stroke: T.void }, endCard, cover
 const ICON2 = {
   nocolor: (c) => `<path d="M3 28 Q28 4 53 28 Q28 52 3 28 Z" fill="none" stroke="${c}" stroke-width="5" stroke-linejoin="round"/><circle cx="28" cy="28" r="9" fill="${c}"/><path d="M8 50 L48 6" stroke="${T.orange}" stroke-width="7" stroke-linecap="round"/>`,
   nosmell: (c) => [14, 28, 42].map((x) => `<path d="M${x} 50 q -8 -11 0 -22 q 8 -11 0 -22" stroke="${c}" stroke-width="5" fill="none" stroke-linecap="round"/>`).join('') + `<path d="M6 48 L50 8" stroke="${T.orange}" stroke-width="7" stroke-linecap="round"/>`,
-  head: (c) => `<circle cx="28" cy="20" r="17" fill="none" stroke="${c}" stroke-width="5"/><path d="M28 40 L28 55 M19 47 L28 56 L37 47" stroke="${c}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  head: (c) => `<path d="M17 2 L39 2 L46 20 L10 20 Z" fill="${T.orange}"/><circle cx="28" cy="39" r="15" fill="none" stroke="${c}" stroke-width="5"/><path d="M20 39 L24 39 M32 39 L36 39" stroke="${c}" stroke-width="4.5" stroke-linecap="round"/>`,
   sleep: (c) => `<path d="M6 12 L32 12 L6 42 L32 42" stroke="${c}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M38 28 L52 28 L38 46 L52 46" stroke="${c}" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
   sick: (c) => `<circle cx="28" cy="28" r="24" fill="none" stroke="${c}" stroke-width="5"/><circle cx="19" cy="22" r="3.6" fill="${c}"/><circle cx="37" cy="22" r="3.6" fill="${c}"/><path d="M15 39 q 4.5 -7 9 0 t 9 0 t 9 0" stroke="${c}" stroke-width="5" fill="none" stroke-linecap="round"/>`,
   air: (c) => `<path d="M4 18 L34 18 Q46 18 46 9 Q46 2 38 3" stroke="${c}" stroke-width="5.5" fill="none" stroke-linecap="round"/><path d="M4 30 L50 30" stroke="${c}" stroke-width="5.5" stroke-linecap="round"/><path d="M4 42 L30 42 Q41 42 41 50 Q41 56 34 55" stroke="${c}" stroke-width="5.5" fill="none" stroke-linecap="round"/>`,
@@ -629,3 +630,30 @@ export const card = ({ y = 300, w = 900, head, icon: hi = 'warn', rows = [], rev
   });
   return s + '</g>';
 };
+
+// ---------- the ignition (episodes 2+) ----------
+// close-up of the lock and the warning lamps. turn 0..1 = key from «0» to «старт», lamps 0..1 = how bright the panel is
+export const ignition = ({ t = 0, turn = 0, lamps = 1 } = {}) => {
+  const a = lerp(-36, 66, turn);
+  const lamp = (x, y, name, col) => `<rect x="${x - 66}" y="${y - 48}" width="132" height="96" rx="20" fill="#060F1B"/><g opacity="${n(0.1 + 0.9 * lamps)}"><rect x="${x - 66}" y="${y - 48}" width="132" height="96" rx="20" fill="${col}" opacity="0.18"/>${icon(name, col, x - 34, y - 34, 1.2)}</g>`;
+  const dial = (cx, k) => {
+    let tk = '';
+    for (let i = 0; i <= 8; i++) { const an = ((-220 + i * 32.5) * Math.PI) / 180; tk += `<line x1="${n(cx + Math.cos(an) * 108)}" y1="${n(510 + Math.sin(an) * 108)}" x2="${n(cx + Math.cos(an) * 128)}" y2="${n(510 + Math.sin(an) * 128)}" stroke="${mix('#2A4467', T.snow, 0.75 * lamps)}" stroke-width="7" stroke-linecap="round"/>`; }
+    const an = ((-220 + k * 260) * Math.PI) / 180;
+    return `<circle cx="${cx}" cy="510" r="150" fill="#071220" stroke="#27466B" stroke-width="6"/><circle cx="${cx}" cy="510" r="150" fill="${T.orange}" opacity="${n(0.07 * lamps)}"/>${tk}
+    <line x1="${cx}" y1="510" x2="${n(cx + Math.cos(an) * 104)}" y2="${n(510 + Math.sin(an) * 104)}" stroke="${mix('#5A2A1E', T.orange, lamps)}" stroke-width="9" stroke-linecap="round"/><circle cx="${cx}" cy="510" r="16" fill="#1B3050"/>`;
+  };
+  const mark = (deg, label, r = 232) => { const an = ((deg - 90) * Math.PI) / 180; return txt(540 + Math.cos(an) * r, 1096 + Math.sin(an) * r, label, { size: label.length > 2 ? 36 : 44, fill: T.label }); };
+  return `<rect x="-300" y="-600" width="${W + 600}" height="${H + 1200}" fill="#0A1626"/>
+  <rect x="80" y="300" width="920" height="420" rx="70" fill="#0E1F37" stroke="#21395A" stroke-width="6"/>${dial(280, 0)}${dial(800, 0.04)}
+  ${lamp(540, 396, 'battery', T.red)}${lamp(540, 510, 'engine', T.orange)}${lamp(540, 624, 'fuel', T.yellow)}
+  <path d="M290 800 L790 800 Q850 800 850 860 L850 2600 L230 2600 L230 860 Q230 800 290 800 Z" fill="#12233D"/><rect x="230" y="800" width="620" height="16" rx="8" fill="#1B3252"/>
+  <circle cx="540" cy="1080" r="156" fill="#1B3050"/><circle cx="540" cy="1080" r="116" fill="${T.metalDark}"/><circle cx="540" cy="1080" r="92" fill="#16263F"/>
+  ${mark(-36, '0')}${mark(-2, 'I')}${mark(32, 'II')}${mark(96, 'СТАРТ', 300)}
+  <g transform="translate(540 1080) rotate(${n(a)})"><rect x="-13" y="-70" width="26" height="140" rx="10" fill="${T.metal}"/>
+  <path d="M-50 -250 Q-50 -286 -14 -286 L14 -286 Q50 -286 50 -250 L50 -96 Q50 -60 14 -60 L-14 -60 Q-50 -60 -50 -96 Z" fill="${T.tyre}"/><rect x="-30" y="-262" width="60" height="150" rx="22" fill="#1A2942"/><circle cx="0" cy="-236" r="13" fill="#0A1626"/>
+  <g transform="translate(0 -236) rotate(${n(-a + Math.sin(t * 3.2) * (4 + 14 * turn))})"><circle cx="0" cy="26" r="26" fill="none" stroke="${T.metal}" stroke-width="7"/><rect x="-4" y="48" width="8" height="44" fill="${T.metal}"/><rect x="-30" y="88" width="60" height="96" rx="14" fill="${T.orange}"/><rect x="-16" y="104" width="32" height="8" rx="4" fill="${T.orangeDark}"/></g></g>`;
+};
+
+// mitten; (x, y) = middle of the cuff, it points up
+export const mitt = ({ x, y, s = 1, rot = 0, col = T.red, dark = T.redDark }) => `<g transform="translate(${n(x)} ${n(y)}) rotate(${n(rot)}) scale(${s})"><rect x="-44" y="-150" width="88" height="160" rx="42" fill="${col}"/><rect x="34" y="-92" width="44" height="72" rx="22" transform="rotate(24 40 -60)" fill="${col}"/><rect x="-50" y="-22" width="100" height="40" rx="14" fill="${dark}"/></g>`;
