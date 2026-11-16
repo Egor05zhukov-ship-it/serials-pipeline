@@ -56,6 +56,8 @@ def load(kind):
     path = model_dir(kind)
     dev = os.environ.get("QWEN_DEVICE") or ("cuda:0" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     dtype = torch.bfloat16 if dev.startswith("cuda") else torch.float16 if dev.startswith("mps") else torch.float32
+    if os.environ.get("QWEN_DTYPE"):  # bf16 on a CPU with AVX512-BF16 halves the memory of fp32 (the 1.7B model then fits 8 GB)
+        dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[os.environ["QWEN_DTYPE"]]
     return Qwen3TTSModel.from_pretrained(path, device_map=dev, dtype=dtype)
 
 

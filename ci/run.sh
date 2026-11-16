@@ -34,10 +34,15 @@ build)
   python -m pip install -q --upgrade pip
   python -m pip install -q torch==2.14.1 torchaudio==2.11.0 --index-url https://download.pytorch.org/whl/cpu
   python -m pip install -q -r ci/requirements.txt
-  export QWEN_SIZE="${QWEN_SIZE:-1.7B}" QWEN_MODELS="$HOME/hf/models" QWEN_PYTHON="$(command -v python)" QWEN_DEVICE=cpu CHROME_PATH="$(command -v google-chrome)"
+  set -a; . ci/tts.env; set +a  # QWEN_SIZE, QWEN_DTYPE: the voice model settings of the cloud build
+  export QWEN_MODELS="$HOME/hf/models" QWEN_PYTHON="$(command -v python)" QWEN_DEVICE=cpu CHROME_PATH="$(command -v google-chrome)"
   M="$QWEN_MODELS/Qwen3-TTS-12Hz-$QWEN_SIZE-Base"
   [ -f "$M/model.safetensors" ] || python -c "from huggingface_hub import snapshot_download; snapshot_download('Qwen/Qwen3-TTS-12Hz-$QWEN_SIZE-Base', local_dir='$M')"
-  say "machine: $(nproc) cores, $(free -m | awk 'NR==2{print $2}') MB; model $QWEN_SIZE; setup $((SECONDS - T0)) s"
+  say "machine: $(nproc) cores, $(free -m | awk 'NR==2{print $2}') MB, $(lscpu | sed -n 's/^Model name: *//p'), bf16 $(grep -c -m1 avx512_bf16 /proc/cpuinfo || true); model $QWEN_SIZE ${QWEN_DTYPE:-fp32}; setup $((SECONDS - T0)) s"
+  # one phrase first: a machine too slow or too small for the voice is seen in a minute, not after two hours
+  T1=$SECONDS
+  /usr/bin/time -v python tts/qwen_synth.py --text "Ядерная тревога. У нас семь минут." --out /tmp/smoke.wav > smoke.log 2>&1 || { tail -25 smoke.log | tee -a "$REPORT"; say "VOICE SMOKE TEST FAILED"; exit 1; }
+  say "voice smoke: $(grep -o '{"ok".*' smoke.log | tail -1), wall $((SECONDS - T1)) s, peak $(awk '/Maximum resident/{printf "%.1f GB", $6/1048576}' smoke.log)"
   EPS="${ARG:-}"
   [ -n "$EPS" ] || EPS=$(node -e 'const q=require("./state/queue.json");console.log(q.episodes.filter(e=>e.status==="written").map(e=>`series/${e.series}/ep${String(e.number).padStart(2,"0")}.js`).join(" "))')
   [ -n "$EPS" ] || { say "nothing to build"; exit 0; }
