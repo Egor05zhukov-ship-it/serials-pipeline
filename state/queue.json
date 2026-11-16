@@ -18,8 +18,7 @@
         "weekday": "18:07",
         "weekend": "13:07"
       },
-      "publisher": "zernio",
-      "paused": "Серию 1 «Списка» и план сезона сейчас делают вручную. Автор не пишет для этого аккаунта, пока в main нет series/spisok/ep01.js."
+      "publisher": "zernio"
     }
   },
   "episodes": [
@@ -89,6 +88,19 @@
       "approved": "16.11.2026: владелец утвердил пилот",
       "scheduledFor": "2026-11-17T18:07",
       "zernioPostId": "6afb77f66031f36ae9f9d448"
+    },
+    {
+      "id": "spisok-ep01",
+      "series": "spisok",
+      "account": "tretye.pravilo",
+      "number": 1,
+      "title": "Десятый адрес",
+      "status": "scheduled",
+      "out": "out/spisok-ep01",
+      "builtAt": "2026-11-17 02:05",
+      "builtOn": "mac",
+      "scheduledFor": "2026-11-17T18:07",
+      "zernioPostId": "6afb86d9a01adfb6559f7b91"
     }
   ],
   "schedulePlan": "Старт: каждый день, в будни 18:07, в выходные 13:07. Позже владелец хочет перейти на пн, ср, пт вечером и субботу в обед."
