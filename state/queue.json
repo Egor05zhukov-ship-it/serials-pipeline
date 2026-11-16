@@ -31,11 +31,12 @@
       "account": "ty.by.vyzhil",
       "number": 1,
       "title": "Кювет",
-      "status": "ready",
+      "status": "published",
       "out": "out/trassa-ep01",
       "builtAt": "2026-11-16 08:52",
-      "publishedAt": null,
-      "postUrl": null
+      "publishedAt": "2026-11-16 08:57",
+      "postUrl": "https://www.instagram.com/reel/Dfyp5CRIxtq/",
+      "publishedSlot": "08:47"
     }
   ]
 }
