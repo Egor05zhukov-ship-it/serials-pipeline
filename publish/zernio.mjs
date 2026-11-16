@@ -35,7 +35,7 @@ function apiKey() {
   throw new Error('No ZERNIO_API_KEY (env or ~/.config/serials/zernio.env)');
 }
 
-async function api(method, route, { body, query, idem } = {}) {
+export async function api(method, route, { body, query, idem } = {}) {
   const url = new URL(BASE + route);
   for (const [k, v] of Object.entries(query || {})) if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
   const headers = { Authorization: `Bearer ${apiKey()}` };
@@ -116,7 +116,7 @@ async function main() {
       const caption = fs.readFileSync(path.join(dir, 'caption.txt'), 'utf8').trim();
       const cover = path.join(dir, 'cover.jpg');
       return postReel({ accountId: need(o.account, '--account'), video: path.join(dir, 'video.mp4'), cover: fs.existsSync(cover) ? cover : null,
-        caption, at: o.at, tz: o.tz, idem: o.idem || `${path.basename(path.resolve(dir))}:${o.account}` });
+        caption, at: o.at, tz: o.tz, idem: o.idem || `${path.basename(path.resolve(dir))}:${o.account}:${o.at || 'now'}` });
     }
     case 'status': return api('GET', `/posts/${need(x, '<postId>')}`);
     case 'delete': return api('DELETE', `/posts/${need(x, '<postId>')}`);

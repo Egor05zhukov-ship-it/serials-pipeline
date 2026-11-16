@@ -1,27 +1,24 @@
 {
-  "_about": "Очередь серий. Меняют только ночные агенты и основная сессия. status: draft (пишется) | ready (собрана, проверена, ждёт публикации) | published.",
+  "_about": "Очередь серий. status: written (сценарий в git, ролик не собран) | ready (собрана, проверена) | scheduled (стоит в Zernio на scheduledFor, время московское) | published | failed | shelved | deleted. Публикует publish/schedule.mjs через Zernio; через Chrome не публиковать.",
   "voice": "qwen",
   "accounts": {
     "ty.by.vyzhil": {
       "name": "Ты бы выжил?",
-      "series": "trassa",
-      "browser": "chrome",
-      "session": true,
+      "series": "ubezhishche",
       "slots": {
         "weekday": "18:07",
         "weekend": "13:07"
-      }
+      },
+      "publisher": "zernio"
     },
     "tretye.pravilo": {
       "name": "Третье правило",
-      "series": "nochnaya-smena",
-      "browser": "chrome",
-      "session": false,
-      "sessionNote": "В Chrome в этот аккаунт никто не вошёл. Публиковать нельзя, пока пользователь сам не войдёт в него в Chrome. Пароли агент не вводит.",
+      "series": "devyatyi-etazh",
       "slots": {
         "weekday": "18:07",
         "weekend": "13:07"
-      }
+      },
+      "publisher": "zernio"
     }
   },
   "episodes": [
@@ -78,6 +75,19 @@
       "publishedAt": null,
       "postUrl": null,
       "shelvedNote": "16.11: владелец отверг гамму, детальную отрисовку и сюжет без тайны. Не публиковать."
+    },
+    {
+      "id": "ubezhishche-ep01",
+      "series": "ubezhishche",
+      "account": "ty.by.vyzhil",
+      "number": 1,
+      "title": "Сорок четвёртый",
+      "status": "scheduled",
+      "out": "out/ubezhishche-ep01",
+      "builtAt": "2026-11-16 19:47",
+      "approved": "16.11.2026: владелец утвердил пилот",
+      "scheduledFor": "2026-11-17T18:07",
+      "zernioPostId": "6afb3ff782956bb9554e8245"
     }
   ],
   "schedulePlan": "Старт: каждый день, в будни 18:07, в выходные 13:07. Позже владелец хочет перейти на пн, ср, пт вечером и субботу в обед."

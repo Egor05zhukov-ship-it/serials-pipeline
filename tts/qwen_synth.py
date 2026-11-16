@@ -24,6 +24,7 @@ import traceback
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODELS = os.environ.get("QWEN_MODELS") or os.path.expanduser("~/.qwen3tts/models")
+SIZE = os.environ.get("QWEN_SIZE") or "1.7B"  # "0.6B" fits a small cloud machine; the voice clip stays the same
 VOICE = os.environ.get("QWEN_VOICE") or (
     "Male narrator, about 50 years old. Deep, dark, slightly gravelly bass voice, very low pitch. "
     "Calm, restrained first-person storytelling with a slight unease, quiet and close to the microphone. "
@@ -42,7 +43,7 @@ class Fail(Exception):
 
 
 def model_dir(kind):
-    d = os.path.join(MODELS, f"Qwen3-TTS-12Hz-1.7B-{kind}")
+    d = os.path.join(MODELS, f"Qwen3-TTS-12Hz-{SIZE}-{kind}")
     if not os.path.isfile(os.path.join(d, "model.safetensors")):
         raise Fail(f"нет модели {d} (папка с моделями задаётся в QWEN_MODELS)")
     return d

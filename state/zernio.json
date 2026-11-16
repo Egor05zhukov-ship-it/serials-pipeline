@@ -5,12 +5,23 @@
     "tretye.pravilo": {
       "accountId": "6afb318957e4c6093e1a85ce",
       "connectedAt": "2026-11-16T16:38:33Z",
-      "scopes": ["instagram_business_basic", "instagram_business_content_publish", "instagram_business_manage_insights", "instagram_business_manage_comments"]
+      "scopes": [
+        "instagram_business_basic",
+        "instagram_business_content_publish",
+        "instagram_business_manage_insights",
+        "instagram_business_manage_comments"
+      ]
     },
     "ty.by.vyzhil": {
-      "accountId": null,
-      "note": "Not connected yet: Chrome has no Instagram session for it. After the owner logs in: node publish/zernio.mjs connect <profileId>, open authUrl in Chrome, turn off the two message permissions, Allow."
+      "accountId": "6afb3cd3d17e69adc36bbd4c",
+      "connectedAt": "2026-11-16T17:26:42Z",
+      "scopes": [
+        "instagram_business_basic",
+        "instagram_business_content_publish",
+        "instagram_business_manage_insights",
+        "instagram_business_manage_comments"
+      ]
     }
   },
-  "tested": "2026-11-16: upload with retry, scheduled reel with cover (12:00 Europe/Moscow -> 09:00Z), status, delete -> 404: passed on tretye.pravilo. GET /inbox/comments -> 200, no add-on needed. Per-post comments list and reply body still unverified (no comments yet)."
+  "tested": "2026-11-16: on both accounts: upload with retry, scheduled reel with cover (12:00 Europe/Moscow -> 09:00Z), status, delete -> 404. GET /inbox/comments -> 200 without an add-on. Per-post comments list and reply body are still unverified (no comments yet). Tokens live 60 days (expires_in 5184000); Zernio refreshes them."
 }
