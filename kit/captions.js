@@ -1,5 +1,5 @@
-// Splits narration into caption chunks (2-4 words, caps) and times them
-// proportionally to their length inside each narration unit.
+// Splits narration into caption chunks (2-4 words, caps) and times them inside each narration unit:
+// by letters between the pauses of the voice, and around the pauses themselves (see alignChunks).
 // Markup: *слово* marks the keyword shown in the accent colour; a lone | forces a chunk break
 // (a sentence with | is split only at those marks).
 
@@ -69,23 +69,100 @@ const toLines = (ws) => {
 
 const weight = (ws) => ws.reduce((s, x) => s + x.w.replace(/[^А-ЯЁA-Z0-9]/g, '').length + (x.end ? 7 : x.soft ? 3 : 0), 0) + 1;
 
-// units: [{text}], sent: [{start,end}] -> [{start,end,lines:[[{w,hi}]]}]
-// lastHold: how long the very last chunk stays after the speech ends (the final line lingers)
-export function planCaptions(units, sent, lastHold = 0.3) {
-  const out = [];
+const letters = (ws) => ws.reduce((s, x) => s + x.w.replace(/[^А-ЯЁA-Z0-9]/g, '').length, 0) + 1;
+
+// When each chunk of one narration unit is really spoken: -> [{ a, b }] in seconds from the start of the unit.
+// The voice does not run evenly: it stops after a sentence and sometimes after a comma. Timing chunks by letters
+// alone puts every caption after such a stop too early. So the stops found in the voice file (pauses = [[from, to]],
+// seconds from the start of the unit) are matched to chunk boundaries: sentence ends first, then commas and marked
+// breaks. A chunk that follows a pause starts when the voice starts again; between pauses time goes by letters.
+export function alignChunks(chunks, span, pauses = []) {
+  const n = chunks.length, total = chunks.reduce((s, c) => s + weight(c), 0);
+  let acc = 0;
+  const exp = chunks.map((c) => { acc += weight(c); return (span * acc) / total; }); // where even timing puts the end of each chunk
+  const kind = chunks.map((c) => { const l = c[c.length - 1]; return l.end ? 2 : l.soft ? 1 : 0; });
+  const P = (pauses || []).filter(([a, b]) => b - a >= 0.16 && a > 0.06 && b < span - 0.06).map(([a, b]) => ({ a, b, d: b - a, mid: (a + b) / 2 }));
+  const at = new Array(n).fill(null); // at[k] = the pause after chunk k
+  const ends = [];
+  for (let k = 0; k < n - 1; k++) if (kind[k] === 2) ends.push(k);
+  // 1. sentence ends take the pauses that suit them best (long, and near the place even timing expects), keeping the order
+  const E = ends.length, Q = P.length, memo = new Map();
+  const go = (i, j, left) => {
+    if (left === 0) return [0, []];
+    if (E - i < left || Q - j < left) return [Infinity, []];
+    const key = `${i} ${j} ${left}`;
+    if (memo.has(key)) return memo.get(key);
+    const rest = go(i + 1, j + 1, left - 1);
+    const r = [[rest[0] + Math.abs(exp[ends[i]] - P[j].mid) - P[j].d, [[ends[i], P[j]], ...rest[1]]], go(i + 1, j, left), go(i, j + 1, left)].reduce((x, y) => (y[0] < x[0] ? y : x));
+    memo.set(key, r);
+    return r;
+  };
+  for (const [k, p] of go(0, 0, Math.min(E, Q))[1]) { at[k] = p; p.used = true; }
+  // 2. a pause that is left goes to the nearest free boundary of its stretch of speech (a comma rather than nothing)
+  for (const p of P.filter((x) => !x.used && x.d >= 0.2).sort((x, y) => y.d - x.d)) {
+    let lo = 0, s = 0, hi = n - 1, e = span;
+    for (let k = 0; k < n - 1; k++) {
+      if (!at[k]) continue;
+      if (at[k].b <= p.a) { lo = k + 1; s = at[k].b; } else if (hi === n - 1) { hi = k; e = at[k].a; }
+    }
+    const sum = chunks.slice(lo, hi + 1).reduce((x, c) => x + letters(c), 0);
+    let cum = 0, best = -1, bd = 0.5;
+    for (let k = lo; k < hi; k++) {
+      cum += letters(chunks[k]);
+      const d = Math.abs(s + ((e - s - p.d) * cum) / sum - p.a) - (kind[k] ? 0.15 : 0);
+      if (!at[k] && d < bd) { bd = d; best = k; }
+    }
+    if (best >= 0) at[best] = p;
+  }
+  // 3. between the pauses the chunks share the time by letters
+  const out = new Array(n);
+  let k0 = 0, s = 0;
+  for (let k = 0; k < n; k++) {
+    if (!at[k] && k < n - 1) continue;
+    const e = at[k] ? at[k].a : span, sum = chunks.slice(k0, k + 1).reduce((x, c) => x + letters(c), 0);
+    let cum = 0;
+    for (let j = k0; j <= k; j++) { const a = s + ((e - s) * cum) / sum; cum += letters(chunks[j]); out[j] = { a, b: s + ((e - s) * cum) / sum }; }
+    k0 = k + 1; s = at[k] ? at[k].b : span;
+  }
+  return out;
+}
+
+// units: [{text}], sent: [{start,end,pauses}] -> [{start,end,unit,lines:[[{w,hi}]]}]
+// pauses: silences inside the voice file of the unit (build.js finds them), see alignChunks().
+// lastHold: how long the very last chunk stays after the speech ends (the final line lingers).
+// minDur: no chunk is on screen for less than this, so nothing flashes.
+// The result also carries .marks: for every unit, the moments its sentences begin (for pictures that follow the words).
+export function planCaptions(units, sent, lastHold = 0.3, minDur = 0.45) {
+  const out = [], marks = [];
   units.forEach((u, i) => {
-    const chunks = chunkWords(tokenize(u.text));
-    const total = chunks.reduce((s, c) => s + weight(c), 0), span = sent[i].end - sent[i].start;
-    let t = sent[i].start;
-    chunks.forEach((c) => {
-      const d = (span * weight(c)) / total;
-      out.push({ start: t, end: t + d, lines: toLines(c).map((ln) => ln.map(({ w, hi }) => ({ w, hi }))) });
-      t += d;
+    const chunks = chunkWords(tokenize(u.text)), t0 = sent[i].start, tm = alignChunks(chunks, sent[i].end - t0, sent[i].pauses), m = [t0];
+    chunks.forEach((c, j) => {
+      const nx = tm[j + 1];
+      // a chunk stays until the next one starts, but not longer than 0.35 s into a pause
+      out.push({ start: t0 + tm[j].a, end: t0 + (nx ? Math.min(nx.a, tm[j].b + 0.35) : tm[j].b), ws: c, unit: i });
+      if (nx && c[c.length - 1].end) m.push(t0 + nx.a);
     });
     // hold the last chunk through the pause, but not into the next unit
     out[out.length - 1].end = sent[i + 1] ? Math.min(sent[i + 1].start, sent[i].end + 0.3) : sent[i].end + lastHold;
+    marks.push(m);
   });
-  return out;
+  const len = (x) => x.end - x.start, last = (x) => x.ws[x.ws.length - 1];
+  for (let j = 0; j < out.length; j++) {
+    const c = out[j], nx = out[j + 1], pv = out[j - 1], same = (x) => x && x.unit === c.unit;
+    let need = minDur - len(c);
+    if (need <= 1e-3) continue;
+    const ext = Math.min(need, Math.max(0, (nx ? nx.start : Infinity) - c.end)); // stay through the pause that follows
+    c.end += ext; need -= ext;
+    if (need <= 1e-3) continue;
+    if (need <= 0.2 && same(nx) && len(nx) - need >= minDur) { nx.start += need; c.end = nx.start; continue; } // the next one comes a moment later
+    if (need <= 0.2 && same(pv) && len(pv) - need >= minDur && pv.end >= c.start - 1e-3) { c.start -= need; pv.end = c.start; continue; } // or this one a moment earlier
+    // too short to save: join it to a neighbour of the same unit (inside its own sentence if possible)
+    if (same(nx) && !(last(c).end && same(pv) && !last(pv).end)) { nx.start = c.start; nx.ws = [...c.ws, ...nx.ws]; out.splice(j, 1); j -= 1; }
+    else if (same(pv)) { pv.end = c.end; pv.ws = [...pv.ws, ...c.ws]; out.splice(j, 1); j -= 2; }
+  }
+  const res = out.map(({ start, end, ws, unit }) => ({ start, end, unit, lines: toLines(ws).map((ln) => ln.map(({ w, hi }) => ({ w, hi }))) }));
+  res.marks = marks;
+  return res;
 }
 
 // Draws one caption chunk for an episode that has a theme (see kit/stage.html). The defaults repeat the

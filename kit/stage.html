@@ -24,7 +24,8 @@
     const sh = tl.shots.find((s) => t >= s.start && t < s.end) || tl.shots[tl.shots.length - 1];
     return frame(ep, shotOnly, t) + (ch ? drawCaption(ch, t, { ...th.caption, ...ep.shots[sh.i].caption }) : '');
   };
-  window.seek = (t) => { stage.innerHTML = th ? themed(t) : frame(ep, tl, t); };
+  // A theme with frame(ep, tl, t) draws everything itself: shot changes without cuts, its own captions and end card (kit/v2.js).
+  window.seek = (t) => { stage.innerHTML = th?.frame ? th.frame(ep, tl, t) : th ? themed(t) : frame(ep, tl, t); };
   window.cover = () => { stage.innerHTML = (th?.cover || cover)(ep.cover); };
   await Promise.all([document.fonts.load('800 60px Mont', 'АЯ'), document.fonts.load('600 40px Mont', 'АЯ')]);
   window.ready = true;

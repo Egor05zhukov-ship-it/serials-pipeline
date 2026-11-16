@@ -31,6 +31,12 @@ const ff = (a, capture = false) => {
 };
 const durOf = (f) => Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f], { encoding: 'utf8' }));
 const TRIM = 'silenceremove=start_periods=1:start_threshold=-50dB:detection=peak';
+// stops of the voice inside one phrase, [[from, to]] in seconds: captions and pictures are timed around them (kit/captions.js)
+const pausesOf = (wav) => {
+  const log = ff(['-i', wav, '-af', 'silencedetect=noise=-38dB:d=0.16', '-f', 'null', '-'], true);
+  const a = [...log.matchAll(/silence_start: (-?[\d.]+)/g)].map((m) => Math.max(0, Number(m[1]))), b = [...log.matchAll(/silence_end: (-?[\d.]+)/g)].map((m) => Number(m[1]));
+  return a.map((x, i) => [x, b[i]]).filter(([x, y]) => y > x);
+};
 
 const ep = (await import(pathToFileURL(path.join(ROOT, epRel)).href)).default;
 const units = ep.narration.map((u) => (typeof u === 'string' ? { text: u } : u));
@@ -52,7 +58,7 @@ for (const [i, u] of units.entries()) {
     fs.rmSync(raw, { force: true });
   }
   const d = durOf(wav);
-  sent.push({ start: t, end: t + d, wav });
+  sent.push({ start: t, end: t + d, wav, pauses: pausesOf(wav) });
   t += d + (u.gap ?? ep.gap ?? 0.2);
   process.stdout.write(`\rvoice ${i + 1}/${units.length}`);
 }
@@ -61,9 +67,17 @@ console.log('');
 // ---------- 2. timeline ----------
 const shots = ep.shots.map((s, i) => ({ i, id: s.id, start: sent[s.from].start, end: ep.shots[i + 1] ? sent[ep.shots[i + 1].from].start : sent[sent.length - 1].end + (ep.tail ?? 0.6) }));
 const endCardStart = shots[shots.length - 1].end, total = endCardStart + (ep.endCardDur ?? 2.5);
-const tl = { fps: FPS, total, endCardStart, sent: sent.map(({ start, end }) => ({ start, end })), shots, chunks: planCaptions(units, sent, ep.tail ?? 0.6) };
+const chunks = planCaptions(units, sent, ep.tail ?? 0.6);
+// marks = when each sentence of a phrase begins: a picture can follow the words past a pause (c.at in kit/v2.js)
+const tl = { fps: FPS, total, endCardStart, sent: sent.map(({ start, end, pauses }, i) => ({ start, end, pauses, marks: chunks.marks[i] })), shots, chunks };
 fs.writeFileSync(path.join(TMP, 'timeline.json'), JSON.stringify(tl));
 console.log(`length ${total.toFixed(1)} s, ${shots.length} shots, ${tl.chunks.length} caption chunks`);
+{
+  // rhythm: a stop inside a phrase longer than the stops between phrases drags. Over 0.8 s: split the phrase at that sentence.
+  const inside = sent.flatMap((s, i) => s.pauses.filter(([a, b]) => b - a >= 0.5 && a > 0.06 && b < s.end - s.start - 0.06).map(([a, b]) => `${String(i).padStart(2, '0')}@${a.toFixed(1)}: ${(b - a).toFixed(2)}${b - a > 0.8 ? ' (!)' : ''}`));
+  const gaps = sent.slice(1).map((s, i) => s.start - sent[i].end);
+  console.log(`pauses between phrases ${Math.min(...gaps).toFixed(2)}-${Math.max(...gaps).toFixed(2)} s; inside phrases, 0.5 s and longer: ${inside.join(', ') || 'none'}`);
+}
 for (const s of shots) console.log(`  ${s.start.toFixed(1).padStart(5)}-${s.end.toFixed(1).padStart(5)}  ${s.id}`);
 
 // ---------- 3. audio ----------
