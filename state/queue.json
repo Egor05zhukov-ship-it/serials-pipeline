@@ -49,6 +49,18 @@
       "builtAt": "2026-11-16 09:02",
       "publishedAt": null,
       "postUrl": null
+    },
+    {
+      "id": "trassa-ep02",
+      "series": "trassa",
+      "account": "ty.by.vyzhil",
+      "number": 2,
+      "title": "Угарный газ",
+      "status": "ready",
+      "out": "out/trassa-ep02",
+      "builtAt": "2026-11-16 09:09",
+      "publishedAt": null,
+      "postUrl": null
     }
   ]
 }

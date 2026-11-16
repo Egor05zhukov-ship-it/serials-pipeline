@@ -404,10 +404,11 @@ export const hand = ({ x, y, s = 1, frost = 0 }) => {
 // ---------- inside the car ----------
 // Cross-section, nose to the right: rear seat on the left, front seat, steering wheel, key, dashboard.
 // dome/dash/warm = 0..1 lights and heater, key = 0..1 turned. K and A are pose objects (null hides the person):
-// K: { jacket, arm: 'wheel' | 'key' | 'back', look, eyes, sleepy, worry }, A: { eyes, tilt, cover 0..1, look }.
+// K: { jacket, arm: 'wheel' | 'key' | 'back', seat: 'rear', look, eyes, sleepy, worry }, A: { eyes, tilt, cover 0..1, look }.
+// gap = window open a little, mats 0..1 = floor mats and seat covers put over the glass, candle 0..1 = candle in a can on the dashboard (-1 = none).
 // The scene behind (sky) and the snow in front are drawn by the caller.
 const limb = (pts, w, col) => `<polyline points="${pts.map((p) => p.join(',')).join(' ')}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
-export const cabin = ({ t = 0, dome = 0.7, dash = 0, key = 0, warm = 0, tilt = 4, K = {}, A = {}, exhaust = true, phone = false, gap = 0, inner = '' } = {}) => {
+export const cabin = ({ t = 0, dome = 0.7, dash = 0, key = 0, warm = 0, tilt = 4, K = {}, A = {}, exhaust = true, phone = false, gap = 0, mats = 0, candle = -1, inner = '' } = {}) => {
   const far = ['M118 600 L288 600 L288 796 L118 796 Z', 'M312 600 L440 600 L440 796 L312 796 Z', 'M486 600 L846 600 L924 796 L486 796 Z'];
   const frost = (x, y, sx = 1) => `<path d="M${x} ${y} l${70 * sx} 0 q${-40 * sx} 14 ${-48 * sx} 30 q${-10 * sx} 20 ${-22 * sx} 44 Z" fill="${T.snow}" opacity="0.22"/>`;
   const wall = mix(mix(T.cabin, '#2A4468', 0.55 * dome), T.cabinWarm, 0.75 * warm), wall2 = mix(mix(T.cabinLight, '#375A86', 0.55 * dome), '#74452A', 0.75 * warm);
@@ -425,10 +426,12 @@ export const cabin = ({ t = 0, dome = 0.7, dash = 0, key = 0, warm = 0, tilt = 4
   <clipPath id="tFar"><path d="${far.join(' ')}"/></clipPath><g clip-path="url(#tFar)">${snowfall({ t, count: 16, y0: 590, y1: 800, seed: 31, opacity: 0.6 })}</g>
   ${frost(118, 600)}${frost(312, 600)}${frost(486, 600)}${frost(288, 600, -1)}${frost(440, 600, -1)}
   ${gap > 0 ? `<path d="M486 600 L846 600 L${n(846 + 8 * gap)} ${n(600 + 20 * gap)} L486 ${n(600 + 20 * gap)} Z" fill="#3A6EA5"/><rect x="560" y="588" width="210" height="${n(24 + 20 * gap)}" rx="16" fill="none" stroke="${T.orange}" stroke-width="5" opacity="${n(0.9 * gap)}"/>` : ''}
+  ${mats > 0 ? [['M112 594 L294 594 L294 802 L112 802 Z', 0, '#27364C'], ['M306 594 L446 594 L446 802 L306 802 Z', 0.3, '#3E4D66'], ['M480 594 L850 594 L930 802 L480 802 Z', 0.6, '#27364C']].map(([d, from, col], i) => { const k = clamp((mats - from) / 0.4); return k <= 0 ? '' : `<g opacity="${n(clamp(k * 3))}" transform="translate(0 ${n((1 - easeOut(k)) * 120)})"><path d="${d}" fill="${col}"/>${[630, 668, 706, 744, 782].map((yy) => `<path d="${i === 2 ? `M486 ${yy} L${n(864 + (yy - 600) * 0.39)} ${yy}` : i === 1 ? `M312 ${yy} L440 ${yy}` : `M118 ${yy} L288 ${yy}`}" stroke="#0E1A2B" stroke-width="5" opacity="0.45"/>`).join('')}</g>`; }).join('') : ''}
   <rect x="440" y="566" width="46" height="534" fill="${wall2}"/><rect x="300" y="800" width="5" height="300" fill="${wall}"/>
   <rect x="340" y="846" width="60" height="12" rx="6" fill="${wall}"/><rect x="560" y="846" width="60" height="12" rx="6" fill="${wall}"/>`;
   // dome lamp and its light
   s += `<rect x="424" y="566" width="78" height="16" rx="8" fill="${dome > 0.05 ? '#FFF3C4' : T.metalDark}"/>${dome > 0.05 ? `<polygon points="430,582 496,582 800,1100 130,1100" fill="#FFE9A8" opacity="${n(0.1 * dome)}"/>` : ''}`;
+  if (candle > 0) s += `<clipPath id="tCav"><path d="${cav}"/></clipPath><g clip-path="url(#tCav)"><rect x="60" y="540" width="980" height="580" fill="${T.orange}" opacity="${n(0.1 * candle)}"/><circle cx="900" cy="760" r="${n(470 + 12 * Math.sin(t * 7))}" fill="${T.orangeLight}" opacity="${n(0.09 * candle)}"/><circle cx="900" cy="760" r="${n(230 + 9 * Math.sin(t * 9))}" fill="${T.yellow}" opacity="${n(0.12 * candle)}"/></g>`;
   // rear seat, front seat
   const seat = (bx, by) => `<rect x="${bx + 30}" y="${by + 54}" width="26" height="40" fill="${T.trim}"/><rect x="${bx + 150}" y="${by + 54}" width="26" height="40" fill="${T.trim}"/>
   <path d="M${bx - 18} ${by + 54} L${bx + 40} ${by + 54} L${bx - 6} ${by - 252} Q${bx - 10} ${by - 276} ${bx - 32} ${by - 276} L${bx - 50} ${by - 276} Q${bx - 74} ${by - 274} ${bx - 72} ${by - 246} Z" fill="${seatC}"/>
@@ -445,22 +448,27 @@ export const cabin = ({ t = 0, dome = 0.7, dash = 0, key = 0, warm = 0, tilt = 4
   ${phone ? `<rect x="868" y="796" width="62" height="14" rx="5" fill="#03080F"/><rect x="872" y="798" width="54" height="6" rx="3" fill="${T.snowLit}" opacity="0.5"/>` : ''}`;
   if (warm > 0) for (let k = 0; k < 3; k++) { const ph = wrap(t * 0.6 + k / 3, 1); s += `<path d="M${n(770 - 150 * ph)} ${n(930 + k * 44 - 20 * ph)} q -20 -12 -40 0 t -40 0" stroke="${T.orangeLight}" stroke-width="7" fill="none" stroke-linecap="round" opacity="${n(0.6 * warm * (1 - ph) * Math.min(1, ph * 5))}"/>`; }
   // Anya on the rear seat
+  let aS = '', kS = '';
   if (A) {
     const cov = A.cover || 0;
-    s += limb([[262, 1024], [352, 1012], [362, 1064]], 42, '#34406B') + `<rect x="338" y="1050" width="54" height="42" rx="15" fill="${T.grey}"/>`
+    aS = limb([[262, 1024], [352, 1012], [362, 1064]], 42, '#34406B') + `<rect x="338" y="1050" width="54" height="42" rx="15" fill="${T.grey}"/>`
       + `<path d="M222 1040 Q214 900 238 866 Q268 846 300 866 Q324 900 316 1040 Z" fill="${T.coat}"/>`
       + (cov > 0 ? `<g opacity="${n(clamp(cov * 12))}" transform="translate(${n((1 - cov) * 300)} ${n(-70 * Math.sin(cov * Math.PI))})"><path d="M206 1046 Q196 906 226 872 Q268 850 316 872 Q384 950 404 1030 Q402 1062 356 1056 Z" fill="${T.orange}"/><path d="M226 872 Q268 850 316 872 Q300 900 268 896 Q240 898 226 872 Z" fill="${T.orangeDark}"/><path d="M214 960 Q290 946 372 968" stroke="${T.orangeDark}" stroke-width="6" fill="none" opacity="0.7"/></g>` : '')
       + `<g transform="translate(266 794) rotate(${n(A.tilt ?? -13)}) scale(0.5)">${anyaHead({ t, eyes: A.eyes ?? 0, look: A.look || 0, worry: A.worry || 0, mouth: A.mouth || 0, pale: A.pale || 0 })}</g>`;
+    if (A.shiver) aS = `<g transform="translate(${n(Math.sin(t * 38) * 2.5 * A.shiver)} 0)">${aS}</g>`;
   }
-  // Kostya on the front seat
+  // Kostya: on the front seat, or on the rear seat next to Anya (seat: 'rear')
   if (K) {
-    const col = K.jacket === false ? T.sweater : T.orange, dark = K.jacket === false ? T.sweaterLight : T.orangeDark;
-    const arm = K.arm === 'key' ? [[632, 838], [716, 934], [792, 934]] : K.arm === 'back' ? [[590, 840], [512, 880], [432, 898]] : [[632, 838], [692, 922], [744, 874]];
-    s += limb([[600, 1022], [744, 1006], [808, 1078]], 52, '#1B2A44') + `<rect x="786" y="1062" width="70" height="38" rx="15" fill="${T.tyre}"/>`
-      + `<path d="M546 1040 Q536 868 564 812 Q602 782 644 812 Q672 872 656 1040 Z" fill="${col}"/>`
+    const col = K.jacket === false ? T.sweater : T.orange, dark = K.jacket === false ? T.sweaterLight : T.orangeDark, rear = K.seat === 'rear';
+    const arm = rear ? [[620, 836], [560, 900], [520, 960]] : K.arm === 'key' ? [[632, 838], [716, 934], [792, 934]] : K.arm === 'back' ? [[590, 840], [512, 880], [432, 898]] : [[632, 838], [692, 922], [744, 874]];
+    const legs = rear ? limb([[600, 1022], [690, 992], [704, 1074]], 52, '#1B2A44') + `<rect x="678" y="1062" width="70" height="38" rx="15" fill="${T.tyre}"/>` : limb([[600, 1022], [744, 1006], [808, 1078]], 52, '#1B2A44') + `<rect x="786" y="1062" width="70" height="38" rx="15" fill="${T.tyre}"/>`;
+    kS = legs + `<path d="M546 1040 Q536 868 564 812 Q602 782 644 812 Q672 872 656 1040 Z" fill="${col}"/>`
       + `<g transform="translate(602 722) rotate(${n(K.tilt || 0)}) scale(0.58)">${kostyaHead({ t, look: K.look || 0, lookY: K.lookY || 0, eyes: K.eyes ?? 1, sleepy: K.sleepy || 0, worry: K.worry || 0, mouth: K.mouth || 0 })}</g>`
-      + limb(arm, 42, dark) + `<circle cx="${arm[2][0]}" cy="${arm[2][1]}" r="18" fill="${T.skin}"/>`;
+      + limb(arm, 42, dark) + (rear ? '' : `<circle cx="${arm[2][0]}" cy="${arm[2][1]}" r="18" fill="${T.skin}"/>`);
+    if (rear) kS = `<g transform="translate(-262 0)">${kS}</g>`;
   }
+  s += K && K.seat === 'rear' ? kS + aS : aS + kS;
+  if (candle >= 0) s += candleCan({ x: 900, y: 812, s: 0.62, lit: candle, t });
   return s + inner + `<path d="M876 566 L976 820" stroke="#B9D6F0" stroke-width="10" stroke-linecap="round" opacity="0.35"/></g>`;
 };
 
@@ -649,7 +657,7 @@ export const ignition = ({ t = 0, turn = 0, lamps = 1 } = {}) => {
   ${lamp(540, 396, 'battery', T.red)}${lamp(540, 510, 'engine', T.orange)}${lamp(540, 624, 'fuel', T.yellow)}
   <path d="M290 800 L790 800 Q850 800 850 860 L850 2600 L230 2600 L230 860 Q230 800 290 800 Z" fill="#12233D"/><rect x="230" y="800" width="620" height="16" rx="8" fill="#1B3252"/>
   <circle cx="540" cy="1080" r="156" fill="#1B3050"/><circle cx="540" cy="1080" r="116" fill="${T.metalDark}"/><circle cx="540" cy="1080" r="92" fill="#16263F"/>
-  ${mark(-36, '0')}${mark(-2, 'I')}${mark(32, 'II')}${mark(96, 'СТАРТ', 300)}
+  ${mark(-36, '0')}${mark(-2, 'I')}${mark(32, 'II')}${mark(80, 'СТАРТ', 336)}
   <g transform="translate(540 1080) rotate(${n(a)})"><rect x="-13" y="-70" width="26" height="140" rx="10" fill="${T.metal}"/>
   <path d="M-50 -250 Q-50 -286 -14 -286 L14 -286 Q50 -286 50 -250 L50 -96 Q50 -60 14 -60 L-14 -60 Q-50 -60 -50 -96 Z" fill="${T.tyre}"/><rect x="-30" y="-262" width="60" height="150" rx="22" fill="#1A2942"/><circle cx="0" cy="-236" r="13" fill="#0A1626"/>
   <g transform="translate(0 -236) rotate(${n(-a + Math.sin(t * 3.2) * (4 + 14 * turn))})"><circle cx="0" cy="26" r="26" fill="none" stroke="${T.metal}" stroke-width="7"/><rect x="-4" y="48" width="8" height="44" fill="${T.metal}"/><rect x="-30" y="88" width="60" height="96" rx="14" fill="${T.orange}"/><rect x="-16" y="104" width="32" height="8" rx="4" fill="${T.orangeDark}"/></g></g>`;
@@ -657,3 +665,64 @@ export const ignition = ({ t = 0, turn = 0, lamps = 1 } = {}) => {
 
 // mitten; (x, y) = middle of the cuff, it points up
 export const mitt = ({ x, y, s = 1, rot = 0, col = T.red, dark = T.redDark }) => `<g transform="translate(${n(x)} ${n(y)}) rotate(${n(rot)}) scale(${s})"><rect x="-44" y="-150" width="88" height="160" rx="42" fill="${col}"/><rect x="34" y="-92" width="44" height="72" rx="22" transform="rotate(24 40 -60)" fill="${col}"/><rect x="-50" y="-22" width="100" height="40" rx="14" fill="${dark}"/></g>`;
+
+// ---------- episode 3: the candle, the phone, the snow wall ----------
+// candle in a tin can; (x, y) = middle of the bottom of the can. lit 0..1
+export function candleCan({ x, y, s = 1, lit = 1, t = 0 }) {
+  const f = 1 + 0.08 * Math.sin(t * 11) + 0.05 * Math.sin(t * 23 + 1), sway = Math.sin(t * 5) * 5;
+  return `<g transform="translate(${n(x)} ${n(y)}) scale(${s})">
+  ${lit > 0 ? `<circle cx="0" cy="-190" r="${n(150 * f)}" fill="${T.yellow}" opacity="${n(0.16 * lit)}"/><circle cx="0" cy="-190" r="${n(80 * f)}" fill="${T.yellow}" opacity="${n(0.22 * lit)}"/>` : ''}
+  <rect x="-22" y="-176" width="44" height="120" rx="8" fill="#F3EBD6"/><rect x="-22" y="-176" width="14" height="120" rx="6" fill="#FFFFFF" opacity="0.5"/><rect x="-3" y="-190" width="6" height="18" rx="3" fill="${T.trim}"/>
+  ${lit > 0 ? `<g transform="translate(0 -188) scale(${n(lit * f)})"><path d="M0 -92 Q${n(34 + sway)} -38 26 -10 Q20 12 0 12 Q-20 12 -26 -10 Q${n(-34 + sway)} -38 0 -92 Z" fill="${T.orange}"/><path d="M0 -56 Q${n(18 + sway * 0.6)} -24 13 -6 Q10 8 0 8 Q-10 8 -13 -6 Q${n(-18 + sway * 0.6)} -24 0 -56 Z" fill="${T.yellow}"/></g>` : ''}
+  <path d="M-84 -128 L84 -128 L84 -8 Q84 0 76 0 L-76 0 Q-84 0 -84 -8 Z" fill="${T.metal}"/><rect x="-84" y="-128" width="30" height="128" fill="${T.snow}" opacity="0.3"/><rect x="56" y="-128" width="28" height="128" fill="${T.metalDark}" opacity="0.6"/>
+  ${[-98, -66, -34].map((yy) => `<rect x="-84" y="${yy}" width="168" height="7" fill="${T.metalDark}" opacity="0.55"/>`).join('')}
+  <ellipse cx="0" cy="-128" rx="84" ry="16" fill="${T.metalDark}"/><ellipse cx="0" cy="-128" rx="70" ry="11" fill="${lit > 0 ? mix('#3A2A1A', T.orange, 0.5 * lit) : '#1A2638'}"/>
+  <rect x="-22" y="-176" width="44" height="52" fill="#F3EBD6"/><rect x="-22" y="-176" width="14" height="52" fill="#FFFFFF" opacity="0.5"/>
+  </g>`;
+}
+
+// close-up: the can with the candle on the dashboard, frosted windscreen behind. lit 0..1
+export const candleClose = ({ t = 0, lit = 1 } = {}) => {
+  const glass = mix('#07121F', '#3B2A1E', 0.55 * lit);
+  return `<rect x="-300" y="-600" width="${W + 600}" height="${H + 1200}" fill="${mix(T.cabin, '#2E2018', 0.6 * lit)}"/>
+  <path d="M-300 -600 L1380 -600 L1380 1010 L-300 1010 Z" fill="${glass}"/>
+  <path d="M-300 -600 L1380 -600 L1380 -200 Q900 40 400 -60 Q0 -120 -300 60 Z" fill="${T.snow}" opacity="0.16"/><path d="M-300 1010 L-300 700 Q-60 760 120 900 Q200 960 260 1010 Z" fill="${T.snow}" opacity="0.18"/><path d="M1380 1010 L1380 640 Q1160 740 1020 900 Q960 960 900 1010 Z" fill="${T.snow}" opacity="0.18"/>
+  ${snowfall({ t, count: 18, y0: 100, y1: 900, seed: 13, opacity: 0.4 })}
+  ${lit > 0 ? `<circle cx="540" cy="640" r="${n(760 + 20 * Math.sin(t * 7))}" fill="${T.orange}" opacity="${n(0.08 * lit)}"/><circle cx="540" cy="640" r="${n(430 + 14 * Math.sin(t * 9))}" fill="${T.yellow}" opacity="${n(0.1 * lit)}"/>` : ''}
+  <path d="M-300 1010 L1380 1010 L1380 2600 L-300 2600 Z" fill="#0B182A"/><rect x="-300" y="1010" width="1680" height="18" fill="${mix(T.cabinLight, '#8A5A30', 0.6 * lit)}"/>
+  ${lit > 0 ? `<ellipse cx="540" cy="1040" rx="460" ry="50" fill="${T.orange}" opacity="${n(0.2 * lit)}"/>` : ''}
+  ${candleCan({ x: 540, y: 1024, s: 2.5, lit, t })}`;
+};
+
+// phone; (x, y) = centre. pct is printed on the lit screen
+export const phone = ({ x, y, s = 1, rot = 0, pct = 9 }) => `<g transform="translate(${n(x)} ${n(y)}) rotate(${n(rot)}) scale(${s})">
+  <rect x="-120" y="-220" width="240" height="440" rx="36" fill="#03080F"/><rect x="-104" y="-200" width="208" height="400" rx="24" fill="#17304F"/>
+  <rect x="-104" y="-200" width="208" height="400" rx="24" fill="${T.snowLit}" opacity="0.1"/>
+  ${icon('nosignal', T.snow, -86, -186, 0.8)}${txt(92, -150, 'нет сети', { size: 26, weight: 600, fill: T.label, anchor: 'end' })}
+  <rect x="-72" y="-70" width="128" height="64" rx="14" fill="none" stroke="${T.orange}" stroke-width="9"/><rect x="58" y="-52" width="12" height="28" rx="4" fill="${T.orange}"/><rect x="-60" y="-58" width="${n(Math.max(8, 104 * pct / 100))}" height="40" rx="6" fill="${T.orange}"/>
+  ${txt(0, 96, `${pct} %`, { size: 86, fill: T.orange })}</g>`;
+
+// two big numbers side by side under an orange header: the old one is crossed out when the new one arrives (k = 0..1)
+export const versus = ({ y = 360, head, icon: hi = 'fuel', a, b, k = 0, pop = 1 }) => {
+  if (pop <= 0) return '';
+  const e = easeOut(clamp(pop)), q = easeOut(clamp(k)), fit = (v) => Math.min(230, (360 / textW(v, 230)) * 230);
+  return `<g transform="translate(0 ${n((1 - e) * 500)})"><rect x="100" y="${y + 14}" width="900" height="560" rx="30" fill="#000" opacity="0.28"/>
+  <rect x="90" y="${y}" width="900" height="560" rx="30" fill="${T.panel}" stroke="${T.panelEdge}" stroke-width="5"/>
+  <path d="M90 ${y + 112} L90 ${y + 30} Q90 ${y} 120 ${y} L960 ${y} Q990 ${y} 990 ${y + 30} L990 ${y + 112} Z" fill="${T.orange}"/>${icon(hi, T.night, 130, y + 22, 1.22)}${txt(224, y + 78, head, { size: Math.min(56, (720 / textW(head, 56, 2)) * 56), fill: T.night, anchor: 'start', ls: 2 })}
+  <g opacity="${n(1 - 0.6 * q)}">${txt(300, y + 370, a.big, { size: n(fit(a.big)), fill: T.snow })}${txt(300, y + 470, a.small, { size: 46, fill: T.label })}</g>
+  ${k > 0 ? `<rect x="${n(300 - 150 * q)}" y="${y + 286}" width="${n(300 * q)}" height="14" rx="7" fill="${T.orange}"/>
+  <g opacity="${n(clamp(k * 3))}" transform="translate(770 ${y + 330}) scale(${n(0.7 + 0.3 * q)}) translate(-770 ${-(y + 330)})">${txt(770, y + 370, b.big, { size: n(fit(b.big)), fill: T.yellow })}${txt(770, y + 470, b.small, { size: 46, fill: T.yellow })}</g>
+  <path d="M490 ${y + 300} L566 ${y + 300} M538 ${y + 270} L572 ${y + 300} L538 ${y + 330}" stroke="${T.orange}" stroke-width="14" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="${n(clamp(k * 3))}"/>` : ''}</g>`;
+};
+
+// snow piled round the car in the ditch up to the windows (drawn over ditch()); k = 0..1 how much is done
+export const snowWall = ({ k = 1 } = {}) => {
+  if (k <= 0) return '';
+  const c = Math.cos((DITCH.rot * Math.PI) / 180), sn = Math.sin((DITCH.rot * Math.PI) / 180), P = (x, y) => [n(DITCH.x + DITCH.s * (x * c - y * sn)), n(DITCH.y + DITCH.s * (x * sn + y * c))];
+  const h = -40 - 262 * easeInOut(clamp(k)), pts = [P(-560, 20), P(-520, h * 0.5), P(-470, h), P(-300, h - 16), P(-120, h + 6), P(60, h - 14), P(210, h + 4), P(330, h * 0.86), P(450, h * 0.8), P(520, h * 0.4), P(580, 60)];
+  let d = `M${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length; i++) { const m = [(pts[i - 1][0] + pts[i][0]) / 2, (pts[i - 1][1] + pts[i][1]) / 2]; d += ` Q${pts[i - 1][0]} ${pts[i - 1][1]} ${n(m[0])} ${n(m[1])}`; }
+  d += ` L${pts[pts.length - 1][0]} ${pts[pts.length - 1][1]}`;
+  return `<path d="${d} L1100 1400 L-20 1400 Z" fill="${T.road}"/><path d="${d}" fill="none" stroke="${T.snow}" stroke-width="7" stroke-linecap="round" opacity="0.8"/>
+  <path d="${DRIFT} L1400 1152 L1400 ${H + 600} L-300 ${H + 600} L-300 1244 Z" fill="${T.bank}"/><path d="${DRIFT}" fill="none" stroke="${T.rim}" stroke-width="6" stroke-linecap="round" opacity="0.7"/>`;
+};
