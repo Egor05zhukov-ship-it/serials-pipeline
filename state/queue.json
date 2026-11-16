@@ -18,7 +18,8 @@
         "weekday": "18:07",
         "weekend": "13:07"
       },
-      "publisher": "zernio"
+      "publisher": "zernio",
+      "paused": "Серию 1 «Списка» и план сезона сейчас делают вручную. Автор не пишет для этого аккаунта, пока в main нет series/spisok/ep01.js."
     }
   },
   "episodes": [
