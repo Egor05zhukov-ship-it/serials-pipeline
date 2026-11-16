@@ -91,7 +91,7 @@ selftest)
   pid=$(node -e 'const r=require("/tmp/st/post.json");console.log(r.post._id+" "+r.post.status)')
   say "scheduled test post: $pid for $at"
   node publish/zernio.mjs delete "${pid%% *}" | tee -a "$REPORT"
-  node publish/zernio.mjs status "${pid%% *}" > /tmp/st/after.json || true
+  sleep 5; node publish/zernio.mjs status "${pid%% *}" > /tmp/st/after.json || true
   grep -q '"status": 404' /tmp/st/after.json && say "SELFTEST OK: scheduled and deleted from the cloud" || { say "SELFTEST FAILED: the test post is still there, delete ${pid%% *} by hand"; exit 1; }
   node publish/schedule.mjs sync | tee -a "$REPORT"
   ;;

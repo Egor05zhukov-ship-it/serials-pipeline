@@ -54,7 +54,7 @@ async function run(only, dry) {
     if (!accountId) { out.push({ id: e.id, skipped: `account ${e.account} is not connected to Zernio` }); continue; }
     if (!fs.existsSync(video) || !fs.existsSync(cap)) { out.push({ id: e.id, skipped: `no ${path.relative(ROOT, video)} here: build it first` }); continue; }
     if (dry) { out.push({ id: e.id, account: e.account, at }); Object.assign(e, { status: 'scheduled', scheduledFor: at }); continue; }
-    const r = await postReel({ accountId, video, cover: fs.existsSync(cover) ? cover : null, caption: fs.readFileSync(cap, 'utf8').trim(), at, idem: `${e.id}:${at}` });
+    const r = await postReel({ accountId, video, cover: fs.existsSync(cover) ? cover : null, caption: fs.readFileSync(cap, 'utf8').trim(), at, idem: `${e.id}:${at}:${fs.statSync(video).size}:${Math.round(fs.statSync(video).mtimeMs / 1000)}` }); // a rebuilt video is a new post, not a replay of the old request
     Object.assign(e, { status: 'scheduled', scheduledFor: at, zernioPostId: r.post._id });
     save(q);
     log({ event: 'scheduled', episode: e.id, account: e.account, for: at, post: r.post._id });

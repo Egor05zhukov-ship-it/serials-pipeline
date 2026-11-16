@@ -178,5 +178,9 @@ try {
     console.log(`done: ${path.join(OUT, 'video.mp4')}`);
   }
 } finally {
-  await Promise.all(browsers.map((b) => b.close())); server.close();
+  // a headless browser that refuses to close must not keep the build alive (it did once: the process hung after «done»)
+  await Promise.race([Promise.all(browsers.map((b) => b.close().catch(() => {}))), new Promise((r) => setTimeout(r, 8000))]);
+  for (const b of browsers) { try { b.process()?.kill('SIGKILL'); } catch { /* already gone */ } }
+  server.closeAllConnections?.(); server.close();
 }
+process.exit(0);
