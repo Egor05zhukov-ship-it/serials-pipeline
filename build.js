@@ -124,7 +124,10 @@ const newPage = async () => {
   pg.on('pageerror', (e) => { console.error('page error:', e.message); });
   await pg.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
   await pg.goto(url);
-  await pg.waitForFunction('window.ready === true', { timeout: 30000 });
+  pg.on('console', (m) => { if (m.type() === 'error') console.error('page console:', m.text()); });
+  pg.on('requestfailed', (r) => console.error('page request failed:', r.url(), r.failure()?.errorText));
+  // polling by timer, not by requestAnimationFrame: a page that is not in front gets no frames on a headless Linux runner
+  await pg.waitForFunction('window.ready === true', { timeout: 90000, polling: 250 });
   return pg;
 };
 const shoot = async (pg, time, file) => { await pg.evaluate((x) => window.seek(x), time); await pg.screenshot({ path: file, type: 'jpeg', quality: 92, optimizeForSpeed: true }); };
