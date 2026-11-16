@@ -24,5 +24,18 @@
       ]
     }
   },
-  "episodes": []
+  "episodes": [
+    {
+      "id": "trassa-ep01",
+      "series": "trassa",
+      "account": "ty.by.vyzhil",
+      "number": 1,
+      "title": "Кювет",
+      "status": "ready",
+      "out": "out/trassa-ep01",
+      "builtAt": "2026-11-16 08:52",
+      "publishedAt": null,
+      "postUrl": null
+    }
+  ]
 }
