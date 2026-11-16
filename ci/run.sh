@@ -73,9 +73,9 @@ if [ "$STAGE" = build ]; then
     else
       tail -6 build.log | tee -a "$REPORT"
       # what is written against what is heard, phrase by phrase; a phrase that came out wrong is voiced again, twice at most
-      bad=0
+      bad=0; idx=""
       for try in 0 1 2; do
-        python tools/phrase_check.py "$ep" > check.log 2>&1 || true
+        python tools/phrase_check.py "$ep" ${idx:+--only "$idx"} > check.log 2>&1 || true
         tail -8 check.log | tee -a "$REPORT"
         grep -q '^MISMATCH_IDX=' check.log || { bad=99; break; }
         idx=$(sed -n 's/^MISMATCH_IDX=//p' check.log)

@@ -47,37 +47,52 @@ def main():
     if len(texts) != len(timeline):
         print(f"фраз в серии {len(texts)}, в сборке {len(timeline)}: серию нужно пересобрать")
         return 2
-    # the Mac has mlx-whisper; a Linux runner (GitHub) has faster-whisper on the CPU
+    # the Mac has mlx-whisper; a Linux runner (GitHub) has faster-whisper on the CPU. There the big model takes about
+    # 15 s a phrase, so a small one listens first and the big one is asked only where the small one disagrees.
+    hear2 = None
     try:
         import mlx_whisper
 
         def hear(wav):
             return mlx_whisper.transcribe(wav, path_or_hf_repo="mlx-community/whisper-large-v3-turbo", language="ru")["text"].strip()
     except ImportError:
+        import soundfile as sf
         from faster_whisper import WhisperModel
 
-        fw = WhisperModel(os.environ.get("WHISPER_MODEL", "large-v3-turbo"), device="cpu", compute_type="int8")
+        models = {}
 
-        def hear(wav):
-            # samples are read here and handed over as an array: the library's own file reader broke on the runner
-            import soundfile as sf
-
-            mono = wav + ".16k.wav"
+        def listen(name, wav):
+            if name not in models:
+                models[name] = WhisperModel(name, device="cpu", compute_type="int8")
+            mono = wav + ".16k.wav"  # samples are read here and handed over as an array: the library's own file reader broke on the runner
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", wav, "-ar", "16000", "-ac", "1", mono], check=True)
             audio, _ = sf.read(mono, dtype="float32")
-            return " ".join(seg.text for seg in fw.transcribe(audio, language="ru", beam_size=5)[0]).strip()
+            return " ".join(seg.text for seg in models[name].transcribe(audio, language="ru", beam_size=5)[0]).strip()
 
+        def hear(wav):
+            return listen(os.environ.get("WHISPER_FAST", "small"), wav)
+
+        def hear2(wav):
+            return listen(os.environ.get("WHISPER_MODEL", "large-v3-turbo"), wav)
+
+    only = None
+    if "--only" in sys.argv:  # after some phrases were voiced again, only they are listened to
+        only = {int(x) for x in sys.argv[sys.argv.index("--only") + 1].split(",") if x.strip()}
     out_dir = os.path.join(work, "phrases")
     os.makedirs(out_dir, exist_ok=True)
     bad = 0
     idx = []
     for i, (u, text) in enumerate(zip(timeline, texts)):
+        if only is not None and i not in only:
+            continue
         wav = os.path.join(out_dir, f"p{i:02d}.wav")
         subprocess.run(
             ["ffmpeg", "-v", "error", "-y", "-i", os.path.join(work, "voice.wav"), "-ss", str(max(0, u["start"] - 0.05)), "-to", str(u["end"] + 0.15), wav],
             check=True,
         )
         heard = hear(wav)
+        if norm(text) != norm(heard) and hear2:
+            heard = hear2(wav)
         if norm(text) != norm(heard):
             bad += 1
             idx.append(i)
