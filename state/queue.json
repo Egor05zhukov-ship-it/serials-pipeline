@@ -101,6 +101,16 @@
       "builtOn": "mac",
       "scheduledFor": "2026-11-17T18:07",
       "zernioPostId": "6afb86d9a01adfb6559f7b91"
+    },
+    {
+      "id": "ubezhishche-ep02",
+      "series": "ubezhishche",
+      "account": "ty.by.vyzhil",
+      "number": 2,
+      "title": "ВТОРАЯ ДВЕРЬ",
+      "status": "failed",
+      "failNote": "pronunciation: these phrases were heard wrong, rewrite them in other words: — Тише, Илья Сергеич. Вика спит.|",
+      "failedAt": "2026-11-17 02:01"
     }
   ],
   "schedulePlan": "Старт: каждый день, в будни 18:07, в выходные 13:07. Позже владелец хочет перейти на пн, ср, пт вечером и субботу в обед."
