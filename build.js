@@ -118,9 +118,11 @@ await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const url = `http://127.0.0.1:${server.address().port}/kit/stage.html?ep=/${epRel}&tl=/tmp/${id}/timeline.json`;
 const chrome = [process.env.CHROME_PATH, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/google-chrome'].find((p) => p && fs.existsSync(p));
 if (!chrome) throw new Error('Chrome не найден: задайте CHROME_PATH');
-const browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox', '--hide-scrollbars', '--force-color-profile=srgb', '--font-render-hinting=none', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'] });
+// One browser per page: in headless Chrome on Linux only the front tab is painted, a screenshot of any other tab hangs.
+const browsers = [];
+const launch = async () => { const b = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox', '--hide-scrollbars', '--force-color-profile=srgb', '--font-render-hinting=none', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'] }); browsers.push(b); return b; };
 const newPage = async () => {
-  const pg = await browser.newPage();
+  const pg = await (await launch()).newPage();
   pg.on('pageerror', (e) => { console.error('page error:', e.message); });
   await pg.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
   await pg.goto(url);
@@ -175,5 +177,5 @@ try {
     console.log(`done: ${path.join(OUT, 'video.mp4')}`);
   }
 } finally {
-  await browser.close(); server.close();
+  await Promise.all(browsers.map((b) => b.close())); server.close();
 }
