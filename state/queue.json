@@ -7,8 +7,11 @@
       "series": "trassa",
       "browser": "chrome",
       "session": true,
-      "slots": ["08:30"],
-      "launchExtraSlot": "18:30"
+      "slots": [
+        "08:47"
+      ],
+      "launchExtraSlot": "18:47",
+      "launchExtraUntil": "2026-11-16"
     },
     "tretye.pravilo": {
       "name": "Третье правило",
@@ -16,7 +19,9 @@
       "browser": "chrome",
       "session": false,
       "sessionNote": "В Chrome в этот аккаунт никто не вошёл. Публиковать нельзя, пока пользователь сам не войдёт в него в Chrome. Пароли агент не вводит.",
-      "slots": ["12:30"]
+      "slots": [
+        "12:47"
+      ]
     }
   },
   "episodes": []
