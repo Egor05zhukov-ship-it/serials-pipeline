@@ -1,6 +1,6 @@
 {
   "_about": "Очередь серий. Меняют только ночные агенты и основная сессия. status: draft (пишется) | ready (собрана, проверена, ждёт публикации) | published.",
-  "voice": "piper",
+  "voice": "qwen",
   "accounts": {
     "ty.by.vyzhil": {
       "name": "Ты бы выжил?",
