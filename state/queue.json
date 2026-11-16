@@ -1,5 +1,5 @@
 {
-  "_about": "Очередь серий. status: written (сценарий в git, ролик не собран) | ready (собрана, проверена) | scheduled (стоит в Zernio на scheduledFor, время московское) | published | failed | shelved | deleted. Публикует publish/schedule.mjs через Zernio; через Chrome не публиковать.",
+  "_about": "Очередь серий. status: written (сценарий в git, ролик не собран) | ready (собрана, проверена) | scheduled (стоит в Zernio на scheduledFor, время московское) | published | failed (причина в failNote) | shelved | deleted. Ведёт только сборка (ci/apply-result.mjs, publish/schedule.mjs); автор серий очередь не редактирует.",
   "voice": "qwen",
   "accounts": {
     "ty.by.vyzhil": {
@@ -13,7 +13,7 @@
     },
     "tretye.pravilo": {
       "name": "Третье правило",
-      "series": "devyatyi-etazh",
+      "series": "spisok",
       "slots": {
         "weekday": "18:07",
         "weekend": "13:07"
