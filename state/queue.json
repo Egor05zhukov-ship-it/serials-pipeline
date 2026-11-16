@@ -7,11 +7,10 @@
       "series": "trassa",
       "browser": "chrome",
       "session": true,
-      "slots": [
-        "08:47"
-      ],
-      "launchExtraSlot": "18:47",
-      "launchExtraUntil": "2026-11-16"
+      "slots": {
+        "weekday": "18:07",
+        "weekend": "13:07"
+      }
     },
     "tretye.pravilo": {
       "name": "Третье правило",
@@ -19,9 +18,10 @@
       "browser": "chrome",
       "session": false,
       "sessionNote": "В Chrome в этот аккаунт никто не вошёл. Публиковать нельзя, пока пользователь сам не войдёт в него в Chrome. Пароли агент не вводит.",
-      "slots": [
-        "12:47"
-      ]
+      "slots": {
+        "weekday": "18:07",
+        "weekend": "13:07"
+      }
     }
   },
   "episodes": [
@@ -31,12 +31,14 @@
       "account": "ty.by.vyzhil",
       "number": 1,
       "title": "Кювет",
-      "status": "published",
+      "status": "deleted",
       "out": "out/trassa-ep01",
       "builtAt": "2026-11-16 08:52",
       "publishedAt": "2026-11-16 08:57",
       "postUrl": "https://www.instagram.com/reel/Dfyp5CRIxtq/",
-      "publishedSlot": "08:47"
+      "publishedSlot": "08:47",
+      "deletedAt": "2026-11-16 13:50",
+      "note": "Удалён по указанию владельца. За 5 часов: 320 просмотров, 0 отметок, 0 подписчиков."
     },
     {
       "id": "nochnaya-smena-ep01",
@@ -44,11 +46,12 @@
       "account": "tretye.pravilo",
       "number": 1,
       "title": "Заказ на моё имя",
-      "status": "ready",
+      "status": "shelved",
       "out": "out/nochnaya-smena-ep01",
       "builtAt": "2026-11-16 09:02",
       "publishedAt": null,
-      "postUrl": null
+      "postUrl": null,
+      "shelvedNote": "16.11: владелец отверг гамму, детальную отрисовку и сюжет без тайны. Не публиковать."
     },
     {
       "id": "trassa-ep02",
@@ -56,11 +59,12 @@
       "account": "ty.by.vyzhil",
       "number": 2,
       "title": "Угарный газ",
-      "status": "ready",
+      "status": "shelved",
       "out": "out/trassa-ep02",
       "builtAt": "2026-11-16 09:09",
       "publishedAt": null,
-      "postUrl": null
+      "postUrl": null,
+      "shelvedNote": "16.11: владелец отверг гамму, детальную отрисовку и сюжет без тайны. Не публиковать."
     },
     {
       "id": "trassa-ep03",
@@ -68,11 +72,13 @@
       "account": "ty.by.vyzhil",
       "number": 3,
       "title": "Аккумулятор",
-      "status": "ready",
+      "status": "shelved",
       "out": "out/trassa-ep03",
       "builtAt": "2026-11-16 09:25",
       "publishedAt": null,
-      "postUrl": null
+      "postUrl": null,
+      "shelvedNote": "16.11: владелец отверг гамму, детальную отрисовку и сюжет без тайны. Не публиковать."
     }
-  ]
+  ],
+  "schedulePlan": "Старт: каждый день, в будни 18:07, в выходные 13:07. Позже владелец хочет перейти на пн, ср, пт вечером и субботу в обед."
 }
