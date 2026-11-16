@@ -1,0 +1,16 @@
+{
+  "_about": "Zernio: publishing reels and answering comments through the official Instagram API (client: publish/zernio.mjs). Key: ~/.config/serials/zernio.env, never in git. Zernio account: Google sign-in (account e-mail), free plan (first 2 accounts free).",
+  "profileId": "6afb30fc9779b2ad3041c95e",
+  "accounts": {
+    "tretye.pravilo": {
+      "accountId": "6afb318957e4c6093e1a85ce",
+      "connectedAt": "2026-11-16T16:38:33Z",
+      "scopes": ["instagram_business_basic", "instagram_business_content_publish", "instagram_business_manage_insights", "instagram_business_manage_comments"]
+    },
+    "ty.by.vyzhil": {
+      "accountId": null,
+      "note": "Not connected yet: Chrome has no Instagram session for it. After the owner logs in: node publish/zernio.mjs connect <profileId>, open authUrl in Chrome, turn off the two message permissions, Allow."
+    }
+  },
+  "tested": "2026-11-16: upload with retry, scheduled reel with cover (12:00 Europe/Moscow -> 09:00Z), status, delete -> 404: passed on tretye.pravilo. GET /inbox/comments -> 200, no add-on needed. Per-post comments list and reply body still unverified (no comments yet)."
+}
