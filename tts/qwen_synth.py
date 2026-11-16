@@ -25,8 +25,9 @@ import traceback
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODELS = os.environ.get("QWEN_MODELS") or os.path.expanduser("~/.qwen3tts/models")
 VOICE = os.environ.get("QWEN_VOICE") or (
-    "Male narrator, about 40 years old. Low, deep baritone. Calm, restrained first-person storytelling with a slight unease, "
-    "quiet and close to the microphone. Steady, fairly brisk pace, short sentences delivered matter-of-factly, crisp diction."
+    "Male narrator, about 50 years old. Deep, dark, slightly gravelly bass voice, very low pitch. "
+    "Calm, restrained first-person storytelling with a slight unease, quiet and close to the microphone. "
+    "Steady, fairly brisk pace, short sentences delivered matter-of-factly, crisp diction."
 )
 VOICE_SEED = int(os.environ.get("QWEN_VOICE_SEED") or 23)  # which take of the description becomes the voice
 SEED = int(os.environ.get("QWEN_SEED") or 7)  # sampling seed of the phrases
