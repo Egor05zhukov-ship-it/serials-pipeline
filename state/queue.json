@@ -37,6 +37,18 @@
       "publishedAt": "2026-11-16 08:57",
       "postUrl": "https://www.instagram.com/reel/Dfyp5CRIxtq/",
       "publishedSlot": "08:47"
+    },
+    {
+      "id": "nochnaya-smena-ep01",
+      "series": "nochnaya-smena",
+      "account": "tretye.pravilo",
+      "number": 1,
+      "title": "Заказ на моё имя",
+      "status": "ready",
+      "out": "out/nochnaya-smena-ep01",
+      "builtAt": "2026-11-16 09:02",
+      "publishedAt": null,
+      "postUrl": null
     }
   ]
 }
