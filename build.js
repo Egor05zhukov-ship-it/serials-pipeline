@@ -45,12 +45,13 @@ const units = ep.narration.map((u) => (typeof u === 'string' ? { text: u } : u))
 const ttsName = opt('tts', process.env.TTS || 'piper');
 const tts = await import(`./tts/${ttsName}.js`);
 const voiceTag = [ttsName, process.env.PIPER_MODEL, process.env.PIPER_PITCH, process.env.PIPER_SPEED, process.env.YANDEX_VOICE, process.env.ELEVENLABS_VOICE_ID, process.env.SAY_VOICE].join('|');
+const redo = new Set(String(opt('redo', '')).split(',').filter(Boolean).map(Number));
 const sent = [];
 let t = 0;
 for (const [i, u] of units.entries()) {
   const say = u.say || plain(u.text);
   const wav = path.join(ROOT, 'tmp/tts-cache', createHash('sha1').update(voiceTag + say).digest('hex').slice(0, 16) + '.wav');
-  if (!fs.existsSync(wav)) {
+  if (!fs.existsSync(wav) || redo.has(i)) { // --redo 3,17: voice these phrases again (another QWEN_SEED gives another take)
     const raw = wav.replace(/\.wav$/, '.src.wav');
     await tts.synth(say, raw);
     // cut silence on both ends so the first word lands exactly on its start time

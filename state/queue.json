@@ -82,12 +82,10 @@
       "account": "ty.by.vyzhil",
       "number": 1,
       "title": "Сорок четвёртый",
-      "status": "scheduled",
+      "status": "ready",
       "out": "out/ubezhishche-ep01",
       "builtAt": "2026-11-16 19:47",
-      "approved": "16.11.2026: владелец утвердил пилот",
-      "scheduledFor": "2026-11-17T18:07",
-      "zernioPostId": "6afb3ff782956bb9554e8245"
+      "approved": "16.11.2026: владелец утвердил пилот"
     }
   ],
   "schedulePlan": "Старт: каждый день, в будни 18:07, в выходные 13:07. Позже владелец хочет перейти на пн, ср, пт вечером и субботу в обед."

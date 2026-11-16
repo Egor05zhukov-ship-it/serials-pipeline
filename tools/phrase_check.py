@@ -47,22 +47,37 @@ def main():
     if len(texts) != len(timeline):
         print(f"фраз в серии {len(texts)}, в сборке {len(timeline)}: серию нужно пересобрать")
         return 2
-    import mlx_whisper
+    # the Mac has mlx-whisper; a Linux runner (GitHub) has faster-whisper on the CPU
+    try:
+        import mlx_whisper
+
+        def hear(wav):
+            return mlx_whisper.transcribe(wav, path_or_hf_repo="mlx-community/whisper-large-v3-turbo", language="ru")["text"].strip()
+    except ImportError:
+        from faster_whisper import WhisperModel
+
+        fw = WhisperModel(os.environ.get("WHISPER_MODEL", "large-v3-turbo"), device="cpu", compute_type="int8")
+
+        def hear(wav):
+            return " ".join(seg.text for seg in fw.transcribe(wav, language="ru", beam_size=5)[0]).strip()
 
     out_dir = os.path.join(work, "phrases")
     os.makedirs(out_dir, exist_ok=True)
     bad = 0
+    idx = []
     for i, (u, text) in enumerate(zip(timeline, texts)):
         wav = os.path.join(out_dir, f"p{i:02d}.wav")
         subprocess.run(
             ["ffmpeg", "-v", "error", "-y", "-i", os.path.join(work, "voice.wav"), "-ss", str(max(0, u["start"] - 0.05)), "-to", str(u["end"] + 0.15), wav],
             check=True,
         )
-        heard = mlx_whisper.transcribe(wav, path_or_hf_repo="mlx-community/whisper-large-v3-turbo", language="ru")["text"].strip()
+        heard = hear(wav)
         if norm(text) != norm(heard):
             bad += 1
+            idx.append(i)
             print(f"{i:02d} НАПИСАНО: {re.sub(r'[*|]', '', text)}\n   СЛЫШНО:   {heard}")
     print(f"{name}: фраз {len(texts)}, расхождений {bad}")
+    print("MISMATCH_IDX=" + ",".join(map(str, idx)))  # for ci/run.sh: these phrases are voiced again with another seed
     return 1 if bad else 0
 
 
