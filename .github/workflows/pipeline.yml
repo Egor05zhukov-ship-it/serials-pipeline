@@ -1,0 +1,78 @@
+name: pipeline
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "build (episodes of main), selftest, sync or probe"
+        default: "sync"
+      arg:
+        description: "build: episode files, space-separated (empty = every episode with status written)"
+        default: ""
+  push:
+    branches: ["claude/**"]
+  schedule:
+    - cron: "41 6,15 * * *"
+concurrency:
+  group: pipeline-${{ github.event_name == 'schedule' && 'sync' || 'main' }}
+env:
+  TASK: ${{ github.event_name == 'schedule' && 'sync' || github.event_name == 'push' && 'branch' || inputs.task }}
+  ARG: ${{ inputs.arg }}
+  BRANCH: ${{ github.event_name == 'push' && github.ref_name || '' }}
+jobs:
+  build:
+    if: github.event_name == 'push' || inputs.task == 'build' || inputs.task == 'probe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: bash ci/run.sh build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: out
+          path: |
+            out/*/video.mp4
+            out/*/cover.jpg
+            out/*/contact.jpg
+            out/*/caption.txt
+            ci-result.json
+            ci-report-build.txt
+            build.log
+            check.log
+          if-no-files-found: ignore
+          retention-days: 5
+  publish:
+    needs: build
+    if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        if: needs.build.result == 'success'
+        with:
+          name: out
+          path: .
+      - run: bash ci/run.sh publish
+        env:
+          ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
