@@ -82,12 +82,14 @@
       "account": "ty.by.vyzhil",
       "number": 1,
       "title": "Сорок четвёртый",
-      "status": "scheduled",
+      "status": "published",
       "out": "out/ubezhishche-ep01",
       "builtAt": "2026-11-16 19:47",
       "approved": "16.11.2026: владелец утвердил пилот",
       "scheduledFor": "2026-11-17T18:07",
-      "zernioPostId": "6afb77f66031f36ae9f9d448"
+      "zernioPostId": "6afb77f66031f36ae9f9d448",
+      "publishedAt": "2026-11-17 18:08",
+      "postUrl": "https://www.instagram.com/reel/Df2N0wYh_-3/"
     },
     {
       "id": "spisok-ep01",
@@ -95,12 +97,14 @@
       "account": "tretye.pravilo",
       "number": 1,
       "title": "Десятый адрес",
-      "status": "scheduled",
+      "status": "published",
       "out": "out/spisok-ep01",
       "builtAt": "2026-11-17 02:05",
       "builtOn": "mac",
       "scheduledFor": "2026-11-17T18:07",
-      "zernioPostId": "6afb86d9a01adfb6559f7b91"
+      "zernioPostId": "6afb86d9a01adfb6559f7b91",
+      "publishedAt": "2026-11-17 18:09",
+      "postUrl": "https://www.instagram.com/reel/Df2N1EZgCaV/"
     },
     {
       "id": "ubezhishche-ep02",
