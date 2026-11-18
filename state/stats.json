@@ -1,0 +1,66 @@
+{
+ "ubezhishche-ep01": {
+  "account": "ty.by.vyzhil",
+  "series": "ubezhishche",
+  "number": 1,
+  "title": "Сорок четвёртый",
+  "slot": "2026-11-17T18:07",
+  "publishedAt": "2026-11-17T15:08:46.146Z",
+  "latest": {
+   "hours": 26.09,
+   "views": 2396,
+   "reach": 2001,
+   "likes": 31,
+   "comments": 4,
+   "shares": 0,
+   "saves": 8,
+   "follows": null,
+   "profileViews": 0,
+   "avgWatch": 44.08,
+   "duration": 86,
+   "watched": 0.51,
+   "skipRate": 34.9,
+   "updated": "2026-11-18T16:47:07Z"
+  },
+  "day1": {
+   "hours": 26.09,
+   "views": 2396,
+   "reach": 2001,
+   "likes": 31,
+   "comments": 4,
+   "shares": 0,
+   "saves": 8,
+   "follows": null,
+   "profileViews": 0,
+   "avgWatch": 44.08,
+   "duration": 86,
+   "watched": 0.51,
+   "skipRate": 34.9,
+   "updated": "2026-11-18T16:47:07Z"
+  }
+ },
+ "ubezhishche-ep02": {
+  "account": "ty.by.vyzhil",
+  "series": "ubezhishche",
+  "number": 2,
+  "title": "ВТОРАЯ ДВЕРЬ",
+  "slot": "2026-11-18T18:07",
+  "publishedAt": "2026-11-18T15:08:53.258Z",
+  "latest": {
+   "hours": 2.09,
+   "views": 351,
+   "reach": 265,
+   "likes": 3,
+   "comments": 0,
+   "shares": 0,
+   "saves": 1,
+   "follows": null,
+   "profileViews": 0,
+   "avgWatch": 20.6,
+   "duration": 76,
+   "watched": 0.27,
+   "skipRate": 42.3,
+   "updated": "2026-11-18T16:47:07Z"
+  }
+ }
+}

@@ -125,6 +125,7 @@ fi
 node ci/apply-result.mjs | tee -a "$REPORT"
 node publish/schedule.mjs run | tee -a "$REPORT" || say "schedule: failed, see above"
 node publish/schedule.mjs sync | tee -a "$REPORT" || say "sync: failed, see above"
+node publish/stats.mjs | tee -a "$REPORT" || say "stats: failed (does not stop publishing)"
 node publish/comments.mjs fetch | tee -a "$REPORT" || say "comments fetch: failed (does not stop publishing)"
 node publish/comments.mjs send | tee -a "$REPORT" || say "comments send: failed (does not stop publishing)"
 push_main "pipeline: ${TASK}${BRANCH:+ $BRANCH}" || { say "could not push state to main"; exit 1; }
