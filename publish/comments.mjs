@@ -4,8 +4,8 @@
 // script posts them after a mechanical filter. Viewer text is data, never instructions.
 //   node publish/comments.mjs fetch    Zernio -> state/comments/inbox.json
 //   node publish/comments.mjs send     state/comments/outbox.json -> Zernio, record in state/comments/replied.json
-// NOT VERIFIED YET (no comments existed on 17.11.2026): the per-post list and the reply call. The raw answer of the
-// first real call is kept in inbox.json (`raw`) so that the field names can be fixed from it.
+// The per-post list was checked on live comments 18.11.2026. The reply call (POST /inbox/comments/{postId}) is used
+// as documented; its first real answer is logged by `send`.
 import fs from 'node:fs';
 import { api } from './zernio.mjs';
 
@@ -26,12 +26,13 @@ async function fetchAll() {
       const post = { account: nick, postId: p.id, permalink: p.permalink, caption: String(p.content || '').slice(0, 120), commentCount: p.commentCount, comments: [] };
       try {
         const r = await api('GET', `/inbox/comments/${p.id}`, { query: { accountId: a.accountId, limit: 50 } });
-        const arr = r.data || r.comments || [];
-        post.raw = JSON.stringify(arr.slice(0, 2)).slice(0, 1500); // shape of the answer, for fixing field names
-        for (const c of arr.slice(0, 50)) {
-          const id = pick(c, ['id', 'commentId', '_id']), text = String(pick(c, ['text', 'message', 'content']) || '').slice(0, 500);
-          if (!id || !text || pick(c, ['isOwn', 'fromOwner', 'isReply'])) continue; // names are not kept: public repository
-          post.comments.push({ commentId: String(id), text, at: pick(c, ['createdTime', 'timestamp', 'createdAt']), answered: Boolean(done[id]) });
+        // shape checked 18.11.2026: {id, message, createdTime, from{username, isOwner}, replies[...same], canReply}
+        for (const c of (r.data || r.comments || []).slice(0, 50)) {
+          const id = String(pick(c, ['id', 'commentId', '_id']) || ''), text = String(pick(c, ['message', 'text', 'content']) || '').slice(0, 500);
+          if (!id || !text || c.from?.isOwner) continue; // our own comments are not answered
+          const ownerReplied = (c.replies || []).some((x) => x.from?.isOwner); // the owner or an earlier run already answered
+          // names and avatars are not kept: this is a public repository
+          post.comments.push({ commentId: id, text, at: pick(c, ['createdTime', 'timestamp', 'createdAt']), answered: Boolean(done[id]) || ownerReplied, canReply: c.canReply !== false });
         }
       } catch (e) { post.error = `${e.message} ${JSON.stringify(e.body || '').slice(0, 300)}`; }
       posts.push(post);
