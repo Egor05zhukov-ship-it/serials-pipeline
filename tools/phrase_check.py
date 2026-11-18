@@ -87,7 +87,10 @@ def main():
             continue
         wav = os.path.join(out_dir, f"p{i:02d}.wav")
         subprocess.run(
-            ["ffmpeg", "-v", "error", "-y", "-i", os.path.join(work, "voice.wav"), "-ss", str(max(0, u["start"] - 0.05)), "-to", str(u["end"] + 0.15), wav],
+            # the phrase is cut first (seek on the input), then gets a quiet lead-in: without it the recogniser drops
+            # the first short word of a phrase that starts at once (19.11: «Ты застрял…» was heard as «застрял…»)
+            ["ffmpeg", "-v", "error", "-y", "-ss", str(max(0, u["start"] - 0.05)), "-to", str(u["end"] + 0.15), "-i", os.path.join(work, "voice.wav"),
+             "-af", "adelay=400:all=1", wav],
             check=True,
         )
         heard = hear(wav)

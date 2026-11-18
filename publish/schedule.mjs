@@ -117,6 +117,10 @@ async function sync() {
         q.accounts[e.account].trial = false;
         delete e.trial; delete e.scheduledFor; delete e.zernioPostId; e.status = 'ready';
         log({ event: 'trial-refused', episode: e.id, account: e.account, why });
+      } else if (e.choice && q.firstComment !== false && /comment/i.test(why)) { // the first comment broke the publication: next time without it
+        q.firstComment = false;
+        delete e.scheduledFor; delete e.zernioPostId; e.status = 'ready';
+        log({ event: 'first-comment-refused', episode: e.id, account: e.account, why });
       } else {
         Object.assign(e, { status: 'failed', failNote: `publication: ${why}` });
         log({ event: 'publish-failed', episode: e.id, account: e.account, why });
