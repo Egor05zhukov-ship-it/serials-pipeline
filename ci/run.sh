@@ -11,9 +11,9 @@ cd "$(dirname "$0")/.."
 STAGE="${1:?stage: build or publish}"; TASK="${TASK:-sync}"
 REPORT="ci-report-$STAGE.txt"; : > "$REPORT"
 say() { echo "$*" | tee -a "$REPORT"; }
-EP_RE='^series/[a-z0-9_-]+/ep[0-9]{2}\.js$'
+EP_RE='^series/[a-z0-9_-]+/ep[0-9]{2}r?\.js$'
 # what a writer's or replier's branch may touch; anything else and the whole branch is refused
-ALLOW_RE='^(series/[a-z0-9_-]+/(ep[0-9]{2}\.js|bible\.md|scenes\.js)|series/_ideas\.md|kit/[a-z0-9_-]+\.js|state/comments/outbox\.json)$'
+ALLOW_RE='^(series/[a-z0-9_-]+/(ep[0-9]{2}r?\.js|bible\.md|scenes\.js)|series/_ideas\.md|series/LESSONS\.md|kit/[a-z0-9_-]+\.js|state/comments/outbox\.json)$'
 DENY_RE='^kit/(v2|index|captions|trassa)\.js$'
 BOT=(-c user.name=serials-bot -c user.email=serials-bot@users.noreply.github.com)
 
@@ -88,7 +88,7 @@ if [ "$STAGE" = build ]; then
       dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "out/$id/video.mp4" 2>/dev/null || echo 0)
       if [ "$bad" = 99 ] || [ "$bad" = 98 ]; then say "$ep: WARNING, the pronunciation check did not run; the episode goes out unchecked"; tail -5 check.log | tee -a "$REPORT"
       elif [ "$bad" != 0 ]; then ok=0; why="pronunciation: these phrases were heard wrong, rewrite them in other words: $(grep 'НАПИСАНО' check.log | sed 's/^[0-9]* НАПИСАНО: //' | tr '\n' '|' | cut -c1-500)"
-      elif [ "$(node -e 'const d=+process.argv[1];console.log(d>=55&&d<=115?1:0)' "$dur")" != 1 ]; then ok=0; why="length $dur s is outside 55-115 s"; fi
+      elif [ "$(node -e 'const d=+process.argv[1];console.log(d>=38&&d<=100?1:0)' "$dur")" != 1 ]; then ok=0; why="length $dur s is outside 38-100 s"; fi
     fi
     say "$ep: $([ $ok = 1 ] && echo READY || echo "NOT READY ($why)"), $((SECONDS - T1)) s, video $dur s"
     node -e 'const fs=require("fs"),[id,ep,ok,why,dur]=process.argv.slice(1),r=JSON.parse(fs.readFileSync("ci-result.json","utf8"));r.push({id,ep,ok:ok==="1",why,dur:+dur});fs.writeFileSync("ci-result.json",JSON.stringify(r,null,1))' "$id" "$ep" "$ok" "$why" "$dur"
@@ -129,5 +129,7 @@ node publish/stats.mjs | tee -a "$REPORT" || say "stats: failed (does not stop p
 node publish/comments.mjs fetch | tee -a "$REPORT" || say "comments fetch: failed (does not stop publishing)"
 node publish/comments.mjs send | tee -a "$REPORT" || say "comments send: failed (does not stop publishing)"
 push_main "pipeline: ${TASK}${BRANCH:+ $BRANCH}" || { say "could not push state to main"; exit 1; }
-node ci/watchdog.mjs | tee -a "$REPORT" || say "watchdog: failed (does not stop publishing)"
 [ -n "$MERGED" ] && git push -q origin --delete "$BRANCH" 2>/dev/null || true
+set +e; node ci/watchdog.mjs | tee -a "$REPORT"; wd=${PIPESTATUS[0]}; set -e
+if [ "$wd" = 3 ] && [ "$TASK" = sync ]; then say "WATCHDOG: an account has no episode for tomorrow; this run fails on purpose so that GitHub mails the owner"; exit 1; fi
+exit 0

@@ -12,6 +12,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import puppeteer from 'puppeteer-core';
 import { planCaptions, plain } from './kit/captions.js';
 import { bedArgs, SFX } from './audio/ambient.js';
+import { SFX as REC, sfxInput } from './audio/sfx.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const FPS = 30, LUFS = -14;
@@ -97,10 +98,19 @@ const voice = path.join(TMP, 'voice.wav'), bed = path.join(TMP, 'bed.wav'), sfx 
     `amix=inputs=${sent.length}:normalize=0:dropout_transition=0,highpass=f=70,acompressor=threshold=-20dB:ratio=3:attack=5:release=90:makeup=3,apad=whole_dur=${total}[v]`;
   ff([...ins, '-filter_complex', fc, '-map', '[v]', '-ar', '48000', '-ac', '1', voice]);
   ff([...bedArgs(total), '-ar', '48000', '-ac', '1', bed]);
-  const cues = (ep.sfx || []).map((c) => ({ src: SFX[c.type](), at: sent[c.sentence].start + (c.at ?? 0) * (sent[c.sentence].end - sent[c.sentence].start) + (c.offset ?? 0), vol: c.vol ?? 1 }));
+  // a cue: { type, phrase: '<id>' (or sentence: <index>), at: 0..1 inside the phrase, offset: seconds, vol, loop, dur }.
+  // type is a recording of audio/sfx (impact-low, knock-door, wind-howl, ...) or a procedural sound of ambient.js (hit)
+  const cues = (ep.sfx || []).map((c) => {
+    const k = c.phrase != null ? units.findIndex((u) => u.id === c.phrase) : c.sentence;
+    if (!sent[k]) throw new Error(`sfx: no phrase ${c.phrase ?? c.sentence}`);
+    const at = Math.max(0, sent[k].start + (c.at ?? 0) * (sent[k].end - sent[k].start) + (c.offset ?? 0));
+    if (REC[c.type]) { const r = sfxInput(c.type, { at, gain: c.vol ?? 1, loop: Boolean(c.loop), dur: c.dur }); return { args: r.args, filter: r.filter }; }
+    if (!SFX[c.type]) throw new Error(`sfx: unknown sound "${c.type}" (recordings: ${Object.keys(REC).join(', ')}; procedural: ${Object.keys(SFX).join(', ')})`);
+    return { args: ['-f', 'lavfi', '-i', SFX[c.type]()], filter: `volume=${c.vol ?? 1},adelay=${Math.round(at * 1000)}:all=1` };
+  });
   if (cues.length) {
-    const ci = cues.flatMap((c) => ['-f', 'lavfi', '-i', c.src]);
-    const cf = cues.map((c, i) => `[${i}]volume=${c.vol},adelay=${Math.round(c.at * 1000)}:all=1[s${i}]`).join(';') + ';' + cues.map((_, i) => `[s${i}]`).join('') + `amix=inputs=${cues.length}:normalize=0,apad=whole_dur=${total}[o]`;
+    const ci = cues.flatMap((c) => c.args);
+    const cf = cues.map((c, i) => `[${i}]${c.filter}[s${i}]`).join(';') + ';' + cues.map((_, i) => `[s${i}]`).join('') + `amix=inputs=${cues.length}:normalize=0,apad=whole_dur=${total}[o]`;
     ff([...ci, '-filter_complex', cf, '-map', '[o]', '-ar', '48000', '-ac', '1', '-t', String(total), sfx]);
   } else ff(['-f', 'lavfi', '-i', `anullsrc=r=48000:cl=mono`, '-t', String(total), sfx]);
   ff(['-i', voice, '-i', bed, '-i', sfx, '-filter_complex', `[1]volume=${ep.bedVolume ?? 0.3}[b];[2]volume=${ep.sfxVolume ?? 0.8}[s];[0][b][s]amix=inputs=3:normalize=0`, '-t', String(total), mix]);

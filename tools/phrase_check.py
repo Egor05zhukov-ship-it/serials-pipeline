@@ -35,7 +35,7 @@ def norm(s):
 
 def main():
     ep = sys.argv[1]
-    m = re.search(r"series/([^/]+)/ep(\d+)\.js$", ep)
+    m = re.search(r"series/([^/]+)/ep(\d+r?)\.js$", ep)
     name = f"{m.group(1)}-ep{m.group(2)}"
     work = os.path.join(ROOT, "tmp", name)
     timeline = json.load(open(os.path.join(work, "timeline.json")))["sent"]

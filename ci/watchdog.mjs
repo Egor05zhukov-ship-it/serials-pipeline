@@ -19,13 +19,16 @@ for (const [nick, a] of Object.entries(q.accounts)) {
 const failed = q.episodes.filter((e) => e.status === 'failed').map((e) => `${e.id}: ${String(e.failNote || '').slice(0, 200)}`);
 console.log(JSON.stringify({ today, tomorrow, empty, failed }));
 
+// exit code 3 = «nothing for tomorrow» at the evening check: ci/run.sh then fails the scheduled run and GitHub mails the owner
+const code = empty.length && new Date().getUTCHours() >= 14 ? 3 : 0;
 const token = process.env.GH_TOKEN, repo = process.env.GITHUB_REPOSITORY;
-if (!token || !repo) process.exit(0);
+if (!token || !repo) process.exit(code);
 const gh = async (method, path, body) => {
   const r = await fetch(`https://api.github.com/repos/${repo}${path}`, { method, headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   if (!r.ok) throw new Error(`${method} ${path} -> ${r.status} ${(await r.text()).slice(0, 200)}`);
   return r.status === 204 ? {} : r.json();
 };
+try {
 const open = (await gh('GET', '/issues?state=open&per_page=50')).filter((i) => i.title.startsWith(TITLE));
 if (empty.length) {
   if (!open.length) {
@@ -46,3 +49,5 @@ if (empty.length) {
     console.log(`issue closed: ${i.html_url}`);
   }
 }
+} catch (err) { console.log(`issues: ${err.message}`); }
+process.exit(code);

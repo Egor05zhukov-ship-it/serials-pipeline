@@ -1,5 +1,5 @@
 {
-  "_about": "Очередь серий. status: written (сценарий в git, ролик не собран) | ready (собрана, проверена) | scheduled (стоит в Zernio на scheduledFor, время московское) | published | failed (причина в failNote) | shelved | deleted. Ведёт только сборка (ci/apply-result.mjs, publish/schedule.mjs); автор серий очередь не редактирует.",
+  "_about": "Очередь серий. status: written (сценарий в git, ролик не собран) | ready (собрана, проверена) | scheduled (стоит в Zernio на scheduledFor, время московское) | published | failed (причина в failNote) | shelved | deleted. Ведёт только сборка (ci/apply-result.mjs, publish/schedule.mjs); автор серий очередь не редактирует. hold: сериалы, чьи пилоты ждут решения владельца (собираются, но не ставятся в расписание). remake: перевыпуск первой серии (файл epNNr.js). slot: своё время выхода серии. altSlot: время перевыпусков.",
   "voice": "qwen",
   "accounts": {
     "ty.by.vyzhil": {
@@ -9,7 +9,8 @@
         "weekday": "18:07",
         "weekend": "13:07"
       },
-      "publisher": "zernio"
+      "publisher": "zernio",
+      "altSlot": "12:37"
     },
     "tretye.pravilo": {
       "name": "Третье правило",
@@ -18,7 +19,8 @@
         "weekday": "18:07",
         "weekend": "13:07"
       },
-      "publisher": "zernio"
+      "publisher": "zernio",
+      "altSlot": "12:37"
     }
   },
   "episodes": [
@@ -152,5 +154,9 @@
       "zernioPostId": "6afdda079ab1f0999ab814ac"
     }
   ],
-  "schedulePlan": "Старт: каждый день, в будни 18:07, в выходные 13:07. Позже владелец хочет перейти на пн, ср, пт вечером и субботу в обед."
+  "schedulePlan": "Старт: каждый день, в будни 18:07, в выходные 13:07. Позже владелец хочет перейти на пн, ср, пт вечером и субботу в обед.",
+  "hold": [
+    "volier",
+    "koleso"
+  ]
 }

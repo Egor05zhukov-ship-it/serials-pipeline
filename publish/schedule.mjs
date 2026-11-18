@@ -5,7 +5,11 @@
 //   node publish/schedule.mjs run [--only <id>]    schedule every `ready` episode whose out/<id>/video.mp4 exists
 //   node publish/schedule.mjs sync                 scheduled -> published / failed (asks Zernio)
 //   node publish/schedule.mjs unschedule <id>      take a scheduled episode off the air plan (back to `ready`)
-// Slots: accounts.<nick>.slots {weekday, weekend}, Moscow time; one episode per account per day, in episode order.
+// Main line: one episode per account per day, in episode order, at accounts.<nick>.slots {weekday, weekend} (Moscow
+// time) or at the episode's own `slot` (a time test of the writer; the value is checked in ci/apply-result.mjs).
+// Remakes (epNNr.js: a first episode that flopped, cut anew): one per account per day at their own time (slot,
+// accounts.<nick>.altSlot or 12:37), as a Trial Reel while the account may post them: Instagram shows a trial reel to
+// non-followers only and puts it on the profile only if it does well. Series in queue.hold are built, never scheduled.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,25 +27,29 @@ const stamp = (d) => msk(d).toISOString().slice(0, 16).replace('T', ' ');
 const addDays = (ymd, n) => new Date(Date.parse(ymd + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const slotOf = (acc, ymd) => ([0, 6].includes(new Date(ymd + 'T00:00:00Z').getUTCDay()) ? acc.slots.weekend : acc.slots.weekday);
 const dayOf = (e) => (e.scheduledFor || e.publishedAt || '').slice(0, 10);
+const lineOf = (e) => (e.remake ? 'remake' : 'main');
+const timeOf = (acc, e, ymd) => e.slot || (e.remake ? acc.altSlot || '12:37' : slotOf(acc, ymd));
 
-// The next free day for the account: after its last scheduled or published episode, not earlier than today,
-// and today only if the slot is still at least MARGIN_MIN minutes away.
-function nextSlot(q, nick, now = new Date()) {
-  const acc = q.accounts[nick], used = q.episodes.filter((e) => e.account === nick && ['scheduled', 'published'].includes(e.status)).map(dayOf).filter(Boolean).sort();
+// The next free day of the episode's line on its account: after the last scheduled or published episode of that line,
+// not earlier than today, and today only if the time is still at least MARGIN_MIN minutes away.
+function nextSlot(q, e, now = new Date()) {
+  const acc = q.accounts[e.account];
+  const used = q.episodes.filter((x) => x.account === e.account && lineOf(x) === lineOf(e) && ['scheduled', 'published'].includes(x.status)).map(dayOf).filter(Boolean).sort();
   let d = day(now);
   if (used.length && used.at(-1) >= d) d = addDays(used.at(-1), 1);
   if (d === day(now)) {
-    const [h, m] = slotOf(acc, d).split(':').map(Number), t = msk(now), left = h * 60 + m - (t.getUTCHours() * 60 + t.getUTCMinutes());
+    const [h, m] = timeOf(acc, e, d).split(':').map(Number), t = msk(now), left = h * 60 + m - (t.getUTCHours() * 60 + t.getUTCMinutes());
     if (left < MARGIN_MIN) d = addDays(d, 1);
   }
-  return `${d}T${slotOf(acc, d)}`;
+  return `${d}T${timeOf(acc, e, d)}`;
 }
 
 // ready episodes in airing order; an episode waits until every earlier one of its series is on the plan
 function due(q, only) {
-  const done = (e) => ['scheduled', 'published'].includes(e.status);
-  return q.episodes.filter((e) => e.status === 'ready' && (!only || e.id === only)).sort((a, b) => a.number - b.number).filter((e) => {
-    const earlier = q.episodes.filter((x) => x.series === e.series && x.number < e.number && !['deleted', 'shelved'].includes(x.status));
+  const done = (e) => ['scheduled', 'published'].includes(e.status), hold = new Set(q.hold || []);
+  return q.episodes.filter((e) => e.status === 'ready' && !hold.has(e.series) && (!only || e.id === only)).sort((a, b) => a.number - b.number).filter((e) => {
+    if (e.remake) return true;
+    const earlier = q.episodes.filter((x) => !x.remake && x.series === e.series && x.number < e.number && !['deleted', 'shelved'].includes(x.status));
     return earlier.every((x) => done(x) || (x.status === 'ready' && !only));
   });
 }
@@ -49,16 +57,19 @@ function due(q, only) {
 async function run(only, dry) {
   const q = read(QUEUE), z = read(ZERNIO), out = [];
   for (const e of due(q, only)) {
-    const dir = path.join(ROOT, e.out || `out/${e.id}`), accountId = z.accounts[e.account]?.accountId, at = nextSlot(q, e.account);
+    const dir = path.join(ROOT, e.out || `out/${e.id}`), accountId = z.accounts[e.account]?.accountId, at = nextSlot(q, e);
     const video = path.join(dir, 'video.mp4'), cover = path.join(dir, 'cover.jpg'), cap = path.join(dir, 'caption.txt');
     if (!accountId) { out.push({ id: e.id, skipped: `account ${e.account} is not connected to Zernio` }); continue; }
     if (!fs.existsSync(video) || !fs.existsSync(cap)) { out.push({ id: e.id, skipped: `no ${path.relative(ROOT, video)} here: build it first` }); continue; }
     if (dry) { out.push({ id: e.id, account: e.account, at }); Object.assign(e, { status: 'scheduled', scheduledFor: at }); continue; }
-    const r = await postReel({ accountId, video, cover: fs.existsSync(cover) ? cover : null, caption: fs.readFileSync(cap, 'utf8').trim(), at, idem: `${e.id}:${at}:${fs.statSync(video).size}:${Math.round(fs.statSync(video).mtimeMs / 1000)}` }); // a rebuilt video is a new post, not a replay of the old request
-    Object.assign(e, { status: 'scheduled', scheduledFor: at, zernioPostId: r.post._id });
+    const trial = Boolean(e.remake) && q.accounts[e.account].trial !== false;
+    const r = await postReel({ accountId, video, cover: fs.existsSync(cover) ? cover : null, caption: fs.readFileSync(cap, 'utf8').trim(), at,
+      idem: `${e.id}:${at}:${fs.statSync(video).size}:${Math.round(fs.statSync(video).mtimeMs / 1000)}`, // a rebuilt video is a new post, not a replay of the old request
+      extra: trial ? { trialParams: { graduationStrategy: 'SS_PERFORMANCE' } } : null });
+    Object.assign(e, { status: 'scheduled', scheduledFor: at, zernioPostId: r.post._id, ...(trial ? { trial: true } : {}) });
     save(q);
-    log({ event: 'scheduled', episode: e.id, account: e.account, for: at, post: r.post._id });
-    out.push({ id: e.id, account: e.account, at, post: r.post._id });
+    log({ event: 'scheduled', episode: e.id, account: e.account, for: at, post: r.post._id, ...(trial ? { trial: true } : {}) });
+    out.push({ id: e.id, account: e.account, at, post: r.post._id, ...(trial ? { trial: true } : {}) });
   }
   return out;
 }
@@ -78,8 +89,15 @@ async function sync() {
       Object.assign(e, { status: 'published', publishedAt: stamp(new Date(pl.publishedAt || post.publishedAt || Date.now())), postUrl: pl.platformPostUrl || null });
       log({ event: 'published', episode: e.id, account: e.account, url: e.postUrl });
     } else if (['failed', 'partial', 'cancelled'].includes(post.status)) {
-      Object.assign(e, { status: 'failed', failNote: String(pl.errorMessage || pl.error || post.status).slice(0, 300) });
-      log({ event: 'publish-failed', episode: e.id, account: e.account, why: e.failNote });
+      const why = String(pl.errorMessage || pl.error || post.status).slice(0, 300);
+      if (e.trial && /trial/i.test(why)) { // the account may not post Trial Reels: the next run sends it as an ordinary reel
+        q.accounts[e.account].trial = false;
+        delete e.trial; delete e.scheduledFor; delete e.zernioPostId; e.status = 'ready';
+        log({ event: 'trial-refused', episode: e.id, account: e.account, why });
+      } else {
+        Object.assign(e, { status: 'failed', failNote: `publication: ${why}` });
+        log({ event: 'publish-failed', episode: e.id, account: e.account, why });
+      }
     }
     out.push({ id: e.id, zernio: post.status, status: e.status, url: e.postUrl });
   }
@@ -92,7 +110,7 @@ async function unschedule(id) {
   if (!e) throw new Error(`no scheduled episode ${id}`);
   await api('DELETE', `/posts/${e.zernioPostId}`);
   log({ event: 'unscheduled', episode: id, was: e.scheduledFor });
-  delete e.scheduledFor; delete e.zernioPostId; e.status = 'ready';
+  delete e.scheduledFor; delete e.zernioPostId; delete e.trial; e.status = 'ready';
   save(q);
   return { id, status: 'ready' };
 }

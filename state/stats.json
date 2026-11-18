@@ -7,7 +7,7 @@
   "slot": "2026-11-17T18:07",
   "publishedAt": "2026-11-17T15:08:46.146Z",
   "latest": {
-   "hours": 26.09,
+   "hours": 26.86,
    "views": 2396,
    "reach": 2001,
    "likes": 31,
@@ -47,7 +47,7 @@
   "slot": "2026-11-18T18:07",
   "publishedAt": "2026-11-18T15:08:53.258Z",
   "latest": {
-   "hours": 2.09,
+   "hours": 2.86,
    "views": 351,
    "reach": 265,
    "likes": 3,
@@ -62,5 +62,59 @@
    "skipRate": 42.3,
    "updated": "2026-11-18T16:47:07Z"
   }
+ },
+ "spisok-ep01": {
+  "account": "tretye.pravilo",
+  "series": "spisok",
+  "number": 1,
+  "title": "Десятый адрес",
+  "slot": "2026-11-17T18:07",
+  "publishedAt": "2026-11-17T15:09:05.903Z",
+  "latest": {
+   "hours": 26.86,
+   "views": 131,
+   "reach": 110,
+   "likes": 4,
+   "comments": 0,
+   "shares": 0,
+   "saves": 0,
+   "follows": null,
+   "profileViews": 0,
+   "avgWatch": 29.74,
+   "duration": 86,
+   "watched": 0.35,
+   "skipRate": 38.2,
+   "updated": "2026-11-18T17:14:06Z"
+  },
+  "day1": {
+   "hours": 26.86,
+   "views": 131,
+   "reach": 110,
+   "likes": 4,
+   "comments": 0,
+   "shares": 0,
+   "saves": 0,
+   "follows": null,
+   "profileViews": 0,
+   "avgWatch": 29.74,
+   "duration": 86,
+   "watched": 0.35,
+   "skipRate": 38.2,
+   "updated": "2026-11-18T17:14:06Z"
+  }
+ },
+ "_accounts": {
+  "tretye.pravilo": [
+   {
+    "date": "2026-11-18",
+    "followers": 0
+   }
+  ],
+  "ty.by.vyzhil": [
+   {
+    "date": "2026-11-18",
+    "followers": 4
+   }
+  ]
  }
 }

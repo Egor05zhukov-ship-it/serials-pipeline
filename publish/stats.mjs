@@ -32,15 +32,27 @@ async function refresh() {
     s.publishedAt = x.publishedAt;
     s.latest = r;
     if (!s.day1 && r.hours >= 22) s.day1 = r; // the first snapshot after ~a day: episodes are compared on it
+    if (!s.day3 && r.hours >= 70) s.day3 = r; // and after three days: what kept growing
     out.push({ id: e.id, hours: r.hours, views: r.views, watched: r.watched, skipRate: r.skipRate, shares: r.shares });
   }
+  try { // followers of each account, one number a day
+    const z = read('state/zernio.json', { accounts: {} }), list = (await api('GET', '/accounts')).accounts || [], today = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+    const acc = (st._accounts ||= {});
+    for (const [nick, a] of Object.entries(z.accounts)) {
+      const n = list.find((x) => x._id === a.accountId)?.followersCount;
+      if (n == null) continue;
+      const h = (acc[nick] ||= []).filter((x) => x.date !== today);
+      h.push({ date: today, followers: n });
+      acc[nick] = h.slice(-60);
+    }
+  } catch (err) { out.push({ followers: 'failed', why: err.message }); }
   fs.writeFileSync(S, JSON.stringify(st, null, 1) + '\n');
   return out;
 }
 
 function table() {
   const st = read(S, {});
-  return Object.entries(st).map(([id, s]) => ({ id, slot: s.slot, ...(s.day1 ? { at: 'day1', ...s.day1 } : { at: 'latest', ...s.latest }) }));
+  return Object.entries(st).filter(([id]) => !id.startsWith('_')).map(([id, s]) => ({ id, slot: s.slot, ...(s.day1 ? { at: 'day1', ...s.day1 } : { at: 'latest', ...s.latest }) }));
 }
 
 const job = { table: async () => table() }[process.argv[2]] || refresh;

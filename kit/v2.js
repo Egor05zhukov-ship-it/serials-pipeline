@@ -243,12 +243,12 @@ const wrap = (words, size, max) => {
   return [words.slice(0, best), words.slice(best)];
 };
 export const caption = (ch, t, { y = 1340, size = 78, hi = V.amber, fill = V.white, max = 810, first = false, scale = 1 } = {}) => {
-  const a = first ? 1 : ease((t - ch.start - 0.066) / 0.2), b = ease((t - ch.end) / 0.1), op = a * (1 - b);
+  const a = first ? 1 : ease((t - ch.start - 0.033) / 0.1), b = ease((t - ch.end) / 0.066), op = a * (1 - b); // quick: the voice is fast, a chunk lives about a second
   if (op <= 0.004) return '';
   const lines = wrap(ch.lines.flat(), size, max), fs = n(size * Math.max(0.86, Math.min(1, max / Math.max(...lines.map((ln) => lineW(ln, size)))))); // a line slightly too wide is set smaller
   const lh = fs * 1.18, y0 = y - ((lines.length - 1) * lh) / 2;
   const row = (dark) => lines.map((ln, i) => `<text x="540" y="${n(y0 + i * lh)}" text-anchor="middle" font-family="Mont" font-weight="800" font-size="${fs}" letter-spacing="1" text-rendering="geometricPrecision">${ln.map((w) => `<tspan fill="${dark ? V.line : w.hi ? hi : fill}">${esc(w.w)}</tspan>`).join(' ')}</text>`).join('');
-  return `<g opacity="${n(op)}" transform="translate(540 ${n(y + (1 - a) * 24 - b * 24)}) scale(${scale.toFixed(5)}) translate(-540 ${-y})"><g transform="translate(0 5)" opacity="0.45">${row(true)}</g>${row(false)}</g>`;
+  return `<g opacity="${n(op)}" transform="translate(540 ${n(y + (1 - a) * 12 - b * 12)}) scale(${scale.toFixed(5)}) translate(-540 ${-y})"><g transform="translate(0 5)" opacity="0.45">${row(true)}</g>${row(false)}</g>`;
 };
 
 // ---------- end card and cover ----------

@@ -77,10 +77,10 @@ export async function upload(file) {
 }
 
 // One video = a Reel (no content type field). scheduledFor without an offset is read in `timezone`.
-export async function postReel({ accountId, video, cover, caption, at, tz = 'Europe/Moscow', idem }) {
+export async function postReel({ accountId, video, cover, caption, at, tz = 'Europe/Moscow', idem, extra }) {
   const v = await upload(video);
   const c = cover ? await upload(cover) : null;
-  const platformSpecificData = { shareToFeed: true, ...(c ? { instagramThumbnail: c.publicUrl } : {}) };
+  const platformSpecificData = { shareToFeed: true, ...(c ? { instagramThumbnail: c.publicUrl } : {}), ...(extra || {}) };
   const body = {
     content: caption,
     mediaItems: [{ type: 'video', url: v.publicUrl }],
