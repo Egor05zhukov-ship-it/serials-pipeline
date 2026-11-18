@@ -112,14 +112,16 @@
       "account": "ty.by.vyzhil",
       "number": 2,
       "title": "ВТОРАЯ ДВЕРЬ",
-      "status": "scheduled",
+      "status": "published",
       "failedAt": "2026-11-17 02:01",
       "out": "out/ubezhishche-ep02",
       "builtAt": "2026-11-17 02:12",
       "builtOn": "github",
       "seconds": 76,
       "scheduledFor": "2026-11-18T18:07",
-      "zernioPostId": "6afb8debf5ce185c20026921"
+      "zernioPostId": "6afb8debf5ce185c20026921",
+      "publishedAt": "2026-11-18 18:08",
+      "postUrl": "https://www.instagram.com/reel/Df4yongMPwZ/"
     }
   ],
   "schedulePlan": "Старт: каждый день, в будни 18:07, в выходные 13:07. Позже владелец хочет перейти на пн, ср, пт вечером и субботу в обед."

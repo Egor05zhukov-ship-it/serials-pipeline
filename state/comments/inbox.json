@@ -1,4 +1,27 @@
 {
- "fetchedAt": "2026-11-17 19:28",
- "posts": []
+ "fetchedAt": "2026-11-18 18:57",
+ "posts": [
+  {
+   "account": "ty.by.vyzhil",
+   "postId": "17910624228573612",
+   "permalink": "https://www.instagram.com/reel/Df2N0wYh_-3/",
+   "caption": "В убежище под школой закрылись сорок три человека. Утром завтрак взяли сорок четыре. А дверь всю ночь была закрыта.\n\n«Уб",
+   "commentCount": 4,
+   "comments": [
+    {
+     "commentId": "17908081581355670",
+     "text": "А он себя или собаку посчитал?",
+     "at": "2026-11-18T04:31:17+0000",
+     "answered": false
+    },
+    {
+     "commentId": "17977605147151802",
+     "text": "А собаку посчитали?",
+     "at": "2026-11-18T03:36:07+0000",
+     "answered": false
+    }
+   ],
+   "raw": "[{\"id\":\"17908081581355670\",\"message\":\"А он себя или собаку посчитал?\",\"createdTime\":\"2026-11-18T04:31:17+0000\",\"from\":{\"id\":\"1532027989983865\",\"name\":\"kazybek0va_ss\",\"username\":\"kazybek0va_ss\",\"isOwner\":false},\"likeCount\":0,\"replyCount\":1,\"platform\":\"instagram\",\"url\":\"https://www.instagram.com/reel/Df2N0wYh_-3/?comment_id=17908081581355670\",\"replies\":[{\"id\":\"18375939967210465\",\"message\":\"@kazybek0va_ss  Узнаем\",\"createdTime\":\"2026-11-18T06:37:42+0000\",\"from\":{\"id\":\"17841455416100037\",\"name\":\"ty.by.vyzhil\",\"username\":\"ty.by.vyzhil\",\"picture\":\"https://scontent-cdg4-3.cdninstagram.com/v/t51.82787-19/910169890_17999039165847204_8783183728217453806_n.jpg?stp=dst-jpg_s240x240_tt6&_nc_cat=101&_nc_map=urlgen_bucketless&ig_cache_key=GCIXQDakVsffB-I-AO50ZMUQI_R5bmNDAQAB2402400j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy44MDAuQzMifQ%3D%3D&_nc_ohc=xHBOqy07CKYQ7kNvwEqLIip&_nc_oc=AdrhJYQHt0lTN2SBKofYnoyyWAWuH4uHbk_YsO99MiWDcYarRlpm2ne4mLjysMJhS7s&_nc_zt=24&_nc_ht=scontent-cdg4-3.cdninstagram.com&edm=AP4hL3IEAAAA&_nc_gid=j6hv0adWSz9AyvP4JYAnYg&_nc_tpa=Q5bMBQIo7Ni_mdNK7n-X0SKJXpBFS1gswDGjgrrL1wvFryRtpbg-dY65DRkevkVQUCC-XRkQuNulNqH-zQ&_nc_ct=RQosPBUCFQIAAAA&oh=00_AQTYKE1JA4mn94Fdw8E03-WPhfdxqbF2DmHcjfEDeu0M2A&oe=6B036E97\",\"isOwner\":true},\"likeCount\":0,\"replyCount\":0,\"platform\":\"instagram\",\"url\":\"https://www.instagram.com/reel/Df2N0wYh_-3/?comment_id=18375939967210465\",\"replies\":[],\"isHidden\":false,\"canReply\":true,\"canDelete\":true,\"canHide\":true,\"canLike\":fals"
+  }
+ ]
 }
