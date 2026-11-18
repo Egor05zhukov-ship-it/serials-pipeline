@@ -128,4 +128,5 @@ node publish/schedule.mjs sync | tee -a "$REPORT" || say "sync: failed, see abov
 node publish/comments.mjs fetch | tee -a "$REPORT" || say "comments fetch: failed (does not stop publishing)"
 node publish/comments.mjs send | tee -a "$REPORT" || say "comments send: failed (does not stop publishing)"
 push_main "pipeline: ${TASK}${BRANCH:+ $BRANCH}" || { say "could not push state to main"; exit 1; }
+node ci/watchdog.mjs | tee -a "$REPORT" || say "watchdog: failed (does not stop publishing)"
 [ -n "$MERGED" ] && git push -q origin --delete "$BRANCH" 2>/dev/null || true
