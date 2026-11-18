@@ -91,7 +91,8 @@
       "scheduledFor": "2026-11-17T18:07",
       "zernioPostId": "6afb77f66031f36ae9f9d448",
       "publishedAt": "2026-11-17 18:08",
-      "postUrl": "https://www.instagram.com/reel/Df2N0wYh_-3/"
+      "postUrl": "https://www.instagram.com/reel/Df2N0wYh_-3/",
+      "storyPostId": "6afdeb056a97d8fc98e6bee0"
     },
     {
       "id": "spisok-ep01",
@@ -106,7 +107,8 @@
       "scheduledFor": "2026-11-17T18:07",
       "zernioPostId": "6afb86d9a01adfb6559f7b91",
       "publishedAt": "2026-11-17 18:09",
-      "postUrl": "https://www.instagram.com/reel/Df2N1EZgCaV/"
+      "postUrl": "https://www.instagram.com/reel/Df2N1EZgCaV/",
+      "storyPostId": "6afde933a8644b450d48278b"
     },
     {
       "id": "ubezhishche-ep02",
@@ -123,7 +125,8 @@
       "scheduledFor": "2026-11-18T18:07",
       "zernioPostId": "6afb8debf5ce185c20026921",
       "publishedAt": "2026-11-18 18:08",
-      "postUrl": "https://www.instagram.com/reel/Df4yongMPwZ/"
+      "postUrl": "https://www.instagram.com/reel/Df4yongMPwZ/",
+      "storyPostId": "6afdeb0a62f447e4214d7e5c"
     },
     {
       "id": "spisok-ep02",
@@ -137,7 +140,8 @@
       "builtOn": "github",
       "seconds": 73,
       "scheduledFor": "2026-11-19T18:07",
-      "zernioPostId": "6afdda029ab1f0999ab81492"
+      "zernioPostId": "6afdda029ab1f0999ab81492",
+      "storyPostId": "6afdeb13a8644b450d482deb"
     },
     {
       "id": "ubezhishche-ep03",
@@ -151,7 +155,8 @@
       "builtOn": "github",
       "seconds": 60,
       "scheduledFor": "2026-11-19T18:07",
-      "zernioPostId": "6afdda079ab1f0999ab814ac"
+      "zernioPostId": "6afdda079ab1f0999ab814ac",
+      "storyPostId": "6afdeb0f4fba6b1555c88c76"
     }
   ],
   "schedulePlan": "Старт: каждый день, в будни 18:07, в выходные 13:07. Позже владелец хочет перейти на пн, ср, пт вечером и субботу в обед.",
