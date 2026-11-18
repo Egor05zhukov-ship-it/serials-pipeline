@@ -49,7 +49,7 @@ const voiceTag = [ttsName, process.env.PIPER_MODEL, process.env.PIPER_PITCH, pro
 const redo = new Set(String(opt('redo', '')).split(',').filter(Boolean).map(Number));
 // Pace (owner 18.11.2026: «голос не должен быть медленным»). The voice is sped up without changing its pitch and the
 // pauses between phrases are shortened; 1.12 and 0.65 put us at ~3.1 words a second inside speech (the hits run at 3.0).
-const TEMPO = Number(ep.tempo ?? process.env.VOICE_TEMPO ?? 1.12), GAPS = Number(ep.gapScale ?? process.env.GAP_SCALE ?? 0.65);
+const TEMPO = Number(ep.tempo ?? process.env.VOICE_TEMPO ?? 1.05), GAPS = Number(ep.gapScale ?? process.env.GAP_SCALE ?? 0.9); // 19.11: «слишком быстро, не успел понять суть»: between the first pace (1 / 1) and 1.12 / 0.65
 const sent = [];
 let t = 0;
 for (const [i, u] of units.entries()) {

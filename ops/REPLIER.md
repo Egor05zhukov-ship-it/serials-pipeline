@@ -9,7 +9,7 @@
 2. Прочитай `state/comments/inbox.json`. Нужны комментарии, у которых `answered` равно `false` и которых нет в `state/comments/replied.json`. Таких нет → заверши запуск одной строкой, ничего не отправляя.
 3. Чтобы отвечать по сюжету, прочитай `bible.md` сериала этого аккаунта (`state/queue.json` → `accounts.<ник>.series`) и текст той серии, под которой комментарий.
 4. Запиши в `state/comments/outbox.json` массив `[{"commentId": "...", "text": "..."}]` (файл переписывай целиком, только новыми ответами). Не больше 15 ответов на аккаунт.
-5. `git add state/comments/outbox.json`, коммит, `git push origin HEAD:refs/heads/claude/replies-$(date -u +%Y%m%d-%H%M)`.
+5. `git config user.name serials-bot && git config user.email serials-bot@users.noreply.github.com`, затем `git add state/comments/outbox.json`, коммит, `git push origin HEAD:refs/heads/claude/replies-$(date -u +%Y%m%d-%H%M)`.
 
 ## Как отвечать
 - Коротко, до 120 знаков, по-русски, на «ты», в тоне рассказчика сериала. Без ссылок, без упоминаний аккаунтов, без хештегов, не больше одного эмодзи.

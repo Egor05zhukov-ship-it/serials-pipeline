@@ -117,8 +117,8 @@ export const platform = ({ cx = 540, y = 1160, pal, booth = true } = {}) =>
 // a person of kit/people.js drawn at size s with everything scaled (the outline too): small figures stay light
 export const tiny = ({ x, y, s = 0.3, ...o }) => `<g transform="translate(${n(x)} ${n(y)}) scale(${n(s)})">${human({ x: 0, y: 0, shadow: false, ...o })}</g>`;
 // the dead: a flat dark figure with pale eyes, leaning, swaying slowly, the arms hanging unevenly
-export const dead = ({ x, y, s = 0.3, t = 0, seed = 0, lean = 1, look = 0, lookY = -0.4, col = K.dead, eyes = K.deadEye }) =>
-  `<g transform="translate(${n(x)} ${n(y)}) scale(${n(s)})">${shade({ x: 0, y: 0, col, eyes, t, seed, lean: lean * (5 + 4 * rnd(seed + 11)) * (rnd(seed + 3) < 0.5 ? -1 : 1), armL: 4 + 34 * rnd(seed + 5), armR: 4 + 34 * rnd(seed + 9), look, lookY })}</g>`;
+export const dead = ({ x, y, s = 0.3, t = 0, seed = 0, lean = 1, look = 0, lookY = -0.4, col = '#8EA58A' }) =>
+  tiny({ x, y, s, col, legs: '#6E7F78', skin: '#C9D6C2', t, seed, look, lookY, tilt: lean * (5 + 4 * rnd(seed + 11)) * (rnd(seed + 3) < 0.5 ? -1 : 1) + 1.6 * Math.sin(t * 0.9 + seed), armL: 4 + 30 * rnd(seed + 5), armR: 4 + 30 * rnd(seed + 9) });
 // a crowd of the dead between x0 and x1, standing on y (deeper ones a little higher and smaller)
 export const deadCrowd = ({ x0, x1, y, count = 20, s = 0.3, t = 0, seed = 1, depth = 26, look = 0, lookY = -0.6, col = K.dead, eyes = K.deadEye }) => {
   const list = Array.from({ length: count }, (_, i) => ({ i, x: lerp(x0, x1, (i + 0.5 * rnd(seed + i * 7)) / count), d: rnd(seed + i * 13) }));

@@ -23,7 +23,10 @@ export const P = {
 };
 
 // the look of the whole cast: one place to change it (tools/sheet.mjs draws variants by passing `style` to human())
-export const STYLE = { ow: 6.5, head: 61, torsoW: 122, torsoH: 166, leg: 146, legW: 34, arm: 146, armW: 29, blush: 0.42, filt: 'sf', shadow: 0.16, whites: 0, tone: 0 };
+// 19.11, the owner on style 3 with hair, blush and big eyes: «слишком мультяшная… в прошлый раз было ближе к хорошему
+// варианту, но надо было слегка доработать». So the cast is plain again (round bare head, dot eyes), with what the old
+// figures lacked: arms, legs with shoes, a clean line. Hair, blush and trim stay in the code behind plain / nohair.
+export const STYLE = { ow: 8, head: 66, torsoW: 130, torsoH: 166, leg: 120, legW: 34, arm: 130, armW: 29, blush: 0, filt: 'sf', shadow: 0.16, whites: 0, tone: 0, plain: true, nohair: true };
 
 const blinkAt = (t, seed) => {
   const per = 3.3 + 1.9 * rnd(seed + 1), u = (((t + per * (0.35 + 0.5 * rnd(seed + 2))) % per) + per) % per;
@@ -108,23 +111,23 @@ export const human = ({ x, y = FLOOR, k = 1, col = '#6F9A97', legs = P.legs, ski
   const body = `<path d="${bd}" fill="${col}" ${INK}/>${toned}${toned ? `<path d="${bd}" fill="none" ${INK}/>` : ''}`;
   const thin = `stroke="${line}" stroke-width="${n(ow * 0.72)}" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
   let trim = '';
-  if (!back) {
+  if (!back && !S.plain) {
     if (wear === 'jacket' || wear === 'coat') trim = `<path d="M${n(-0.17 * tw)} ${n(yt + 5 * k)} L0 ${n(yt + 0.2 * th)} L${n(0.17 * tw)} ${n(yt + 5 * k)}" ${thin}/><path d="M0 ${n(yt + 0.2 * th)} L0 ${n(yb - 8 * k)}" ${thin}/>`;
     if (col2) trim += `<path d="M${n(-0.3 * tw)} ${n(yt + 3 * k)} Q0 ${n(yt + 0.22 * th)} ${n(0.3 * tw)} ${n(yt + 3 * k)} L${n(0.24 * tw)} ${n(yt + 0.2 * th)} Q0 ${n(yt + 0.36 * th)} ${n(-0.24 * tw)} ${n(yt + 0.2 * th)} Z" fill="${col2}" ${INK}/>`;
   }
   // head
-  const hs = HAIR[hair.style] || HAIR.short, hh = hs(r, hy, INK, hair.col || P.hair.dark);
+  const hs = S.nohair ? HAIR.bald : HAIR[hair.style] || HAIR.short, hh = hs(r, hy, INK, hair.col || P.hair.dark);
   const head = back && hair.style !== 'bald'
     ? `<circle cx="0" cy="${n(hy)}" r="${n(r)}" fill="${hair.style === 'hood' || hair.style === 'beanie' ? hair.col : hair.col || P.hair.dark}" ${INK}/>`
     : `<circle cx="0" cy="${n(hy)}" r="${n(r)}" fill="${skin}" ${INK}/>`;
   let face = '';
   if (!back) {
-    const fx = look * 0.15 * r, fy = hy + 0.1 * r + lookY * 0.1 * r, ex = 0.36 * r, shut = blinkAt(t, seed), W = clamp(Math.max(wide, S.whites));
+    const fx = look * 0.15 * r, fy = hy + 0.1 * r + lookY * 0.1 * r, ex = 0.36 * r, shut = blinkAt(t, seed), W = S.plain ? 0 : clamp(Math.max(wide, S.whites));
     const erx = lerp(0.118, 0.13, W) * r, ery = lerp(0.158, 0.16, W) * r;
     const eyes = [-1, 1].map((d) => {
       const cx = d * ex + fx, px = cx + look * 0.05 * r * W, py = fy + lookY * 0.05 * r * W, open = 1 - 0.86 * shut;
       const white = W > 0.05 ? `<ellipse cx="${n(cx)}" cy="${n(fy)}" rx="${n(0.25 * r * W + erx * (1 - W))}" ry="${n((0.27 * r * W + ery * (1 - W)) * open)}" fill="${P.white}" stroke="${line}" stroke-width="${n(ow * 0.5)}"/>` : '';
-      return `${white}<ellipse cx="${n(px)}" cy="${n(py)}" rx="${n(erx)}" ry="${n(ery * open)}" fill="${line}"/>${shut < 0.5 ? `<circle cx="${n(px + 0.045 * r)}" cy="${n(py - 0.06 * r)}" r="${n(0.04 * r)}" fill="${P.white}"/>` : ''}`;
+      return `${white}<ellipse cx="${n(px)}" cy="${n(py)}" rx="${n(erx)}" ry="${n(ery * open)}" fill="${line}"/>${shut < 0.5 && !S.plain ? `<circle cx="${n(px + 0.045 * r)}" cy="${n(py - 0.06 * r)}" r="${n(0.04 * r)}" fill="${P.white}"/>` : ''}`;
     }).join('');
     // brows: a short stroke over each eye; worry lifts the inner end and the whole brow
     const wv = clamp(worry), by = fy - (0.36 + 0.1 * W + 0.06 * wv) * r;
@@ -134,11 +137,11 @@ export const human = ({ x, y = FLOOR, k = 1, col = '#6F9A97', legs = P.legs, ski
       : mouth === 'smile' ? `<path d="M${n(fx - mw)} ${n(my - 0.03 * r)} Q${n(fx)} ${n(my + 0.13 * r)} ${n(fx + mw)} ${n(my - 0.03 * r)}" ${thin}/>`
       : mouth === 'line' ? `<path d="M${n(fx - mw * 0.8)} ${n(my)} Q${n(fx)} ${n(my + 0.03 * r)} ${n(fx + mw * 0.8)} ${n(my)}" ${thin}/>` : '';
     const blush = S.blush > 0.02 ? [-1, 1].map((d) => `<circle cx="${n(d * 0.6 * r + fx * 0.6)}" cy="${n(fy + 0.3 * r)}" r="${n(0.17 * r)}" fill="${P.blush}" opacity="${n(S.blush)}"/>`).join('') : '';
-    face = blush + eyes + brows + mth;
+    face = S.plain ? eyes + (worry > 0.3 || wide > 0.3 ? brows : '') + (mouth === 'o' ? mth : '') : blush + eyes + brows + mth;
   }
   const sh = shadow && S.shadow > 0 ? `<ellipse cx="0" cy="${n(2 * k)}" rx="${n(tw * 0.62)}" ry="${n(11 * k)}" fill="#000" opacity="${n(S.shadow * clamp(1 - up / (60 * k)))}"/>` : '';
   const filt = S.filt ? ` filter="url(#${S.filt}${seed % 4})"` : '';
-  return `<g transform="translate(${n(x)} ${n(y)})">${sh}<g${tilt ? ` transform="rotate(${n(tilt)})"` : ''}${filt}${alpha < 1 ? ` opacity="${n(alpha)}"` : ''}>${hh.back}${behind}${legsSvg}${neck}${body}${trim}${over}${head}${back ? '' : hh.top}${back && (hair.style === 'bald') ? '' : ''}${face}</g></g>`;
+  return `<g transform="translate(${n(x)} ${n(y)})">${sh}<g${tilt ? ` transform="rotate(${n(tilt)})"` : ''}${filt}${alpha < 1 ? ` opacity="${n(alpha)}"` : ''}>${hh.back}${behind}${legsSvg}${S.plain ? '' : neck}${body}${trim}${over}${head}${back ? '' : hh.top}${back && (hair.style === 'bald') ? '' : ''}${face}</g></g>`;
 };
 
 // The same figure as one flat shape with two pale eyes: the dead, a crowd, someone far away or in the dark.
