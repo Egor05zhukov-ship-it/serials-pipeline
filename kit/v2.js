@@ -47,7 +47,9 @@ export const label = (x, y, str, { size = 52, weight = 800, fill = V.white, anch
 export const defs = (boil = 0) => {
   const still = (seed) => `<feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="${seed}" result="a"/><feDisplacementMap in="SourceGraphic" in2="a" scale="13" xChannelSelector="R" yChannelSelector="G" result="b"/>`;
   const hand = (i) => `<filter id="hd${i}" x="-30%" y="-14%" width="160%" height="128%" color-interpolation-filters="sRGB">${still(7 + i * 5)}<feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="1" seed="${40 + i * 9 + (boil % 4)}" result="c"/><feDisplacementMap in="b" in2="c" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter>`;
-  return `${[0, 1, 2, 3].map(hand).join('')}<filter id="ink" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">${still(3)}</filter><clipPath id="fc"><rect width="${W}" height="${H}"/></clipPath>`;
+  // sf0..sf3: the calm hand of kit/people.js (style 3): a line that is clean but not a ruler's, a boil you feel more than see
+  const soft = (i) => `<filter id="sf${i}" x="-24%" y="-12%" width="148%" height="124%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="${11 + i * 5}" result="a"/><feDisplacementMap in="SourceGraphic" in2="a" scale="2.8" xChannelSelector="R" yChannelSelector="G" result="b"/><feTurbulence type="fractalNoise" baseFrequency="0.034" numOctaves="1" seed="${60 + i * 9 + (boil % 4)}" result="c"/><feDisplacementMap in="b" in2="c" scale="1.3" xChannelSelector="R" yChannelSelector="G"/></filter>`;
+  return `${[0, 1, 2, 3].map(hand).join('')}${[0, 1, 2, 3].map(soft).join('')}<filter id="ink" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">${still(3)}</filter><clipPath id="fc"><rect width="${W}" height="${H}"/></clipPath>`;
 };
 
 // ---------- people ----------
@@ -261,6 +263,21 @@ export const endCard = ({ t = 9, p = 1, line = 'Продолжение завт�
   <g opacity="${n(b)}" transform="translate(0 ${n((1 - b) * 18)})">${label(540, y0 + (words.length - 1) * 132 + 164, sub, { size: 52, weight: 600, fill: V.soft })}</g></g>`;
 };
 
+// The viewer's choice (owner 19.11.2026: «зритель пусть выбирает, что будет дальше»): the last shot of an episode, under
+// the voice that names the two options and calls for comments. a, b, c = seconds since option A, option B and the call
+// were named (c.since of their phrases); optA / optB in caps, two or three words each. The shot hides the captions:
+// give it caption: { hide: true }.
+export const choiceCard = ({ a = 9, b = 9, c = 9, q = 'ЧТО ДЕЛАТЬ?', optA = '', optB = '', call = 'ПИШИ В КОММЕНТАРИЯХ', p = 1, back = V.floor, fill = V.mid }) => {
+  const plate = (y, letter, str, u) => {
+    if (u <= 0) return '';
+    const e = ease(u / 0.35), fs = Math.min(66, (650 / textW(str, 66, 1)) * 66);
+    return `<g opacity="${n(e)}" transform="translate(${n((1 - e) * 40)} 0)"><rect x="80" y="${y}" width="920" height="176" rx="38" fill="${fill}"/><circle cx="184" cy="${y + 88}" r="58" fill="${V.amber}"/>${label(184, y + 88 + 26, letter, { size: 74, fill: V.floor })}${label(278, y + 88 + fs * 0.355, str, { size: n(fs), anchor: 'start' })}</g>`;
+  };
+  const k = ease(c / 0.35);
+  return `${bg(back)}<g transform="translate(540 960) scale(${(1 + 0.03 * sine(p)).toFixed(5)}) translate(-540 -960)">${label(540, 500, q, { size: 96 })}${plate(600, 'А', optA, a)}${plate(820, 'Б', optB, b)}
+  ${c > 0 ? `<g opacity="${n(k)}" transform="translate(0 ${n((1 - k) * 20)})">${label(540, 1150, call, { size: 60, fill: V.amber, ls: 2 })}</g>` : ''}</g>`;
+};
+
 // Cover for the profile grid: the frame of the series (art), the tag «СЕРИЯ N», the title in caps and a ribbon.
 // hookHi = the part of the ribbon text that is amber.
 export const cover = ({ ep = 1, title = [], hook = '', hookHi = '', art = '' } = {}) => {
@@ -314,6 +331,7 @@ export function frame(ep, tl, t) {
   const shotOf = (x) => { let k = 0; while (k < N - 1 && x >= start(k + 1)) k++; return k; };
   const caps = tl.chunks.filter((ch) => t >= ch.start && t < ch.end + 0.1).map((ch) => {
     const k = shotOf(ch.start), o = { ...th.caption, ...ep.shots[k].caption }, [a, b] = span(k);
+    if (o.hide) return ''; // the shot shows the words itself (choiceCard)
     return caption(ch, t, { ...o, first: ch.start === 0, scale: 1 + (o.push || 0) * sine((t - a) / (b - a)) });
   }).join('');
   return `<defs>${defs(Math.floor(Math.round(t * tl.fps) / 6))}</defs>${pic}${caps}`;

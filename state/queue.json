@@ -6,8 +6,8 @@
       "name": "Ты бы выжил?",
       "series": "ubezhishche",
       "slots": {
-        "weekday": "18:07",
-        "weekend": "13:07"
+        "weekday": "16:17",
+        "weekend": "16:17"
       },
       "publisher": "zernio",
       "altSlot": "12:37"
@@ -16,8 +16,8 @@
       "name": "Третье правило",
       "series": "spisok",
       "slots": {
-        "weekday": "18:07",
-        "weekend": "13:07"
+        "weekday": "20:23",
+        "weekend": "20:23"
       },
       "publisher": "zernio",
       "altSlot": "12:37"
@@ -159,9 +159,9 @@
       "storyPostId": "6afdeb0f4fba6b1555c88c76"
     }
   ],
-  "schedulePlan": "Старт: каждый день, в будни 18:07, в выходные 13:07. Позже владелец хочет перейти на пн, ср, пт вечером и субботу в обед.",
+  "schedulePlan": "С 19.11: @ty.by.vyzhil каждый день в 16:17, @tretye.pravilo в 20:23 (по времени хитов у образцов: 16:00-16:45 и 20:00-20:40). Серия пишется после голосования зрителей под предыдущей, запаса на завтра нет.",
   "hold": [
-    "volier",
-    "koleso"
+    "koleso",
+    "orbita"
   ]
 }

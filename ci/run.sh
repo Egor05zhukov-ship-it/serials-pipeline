@@ -14,7 +14,7 @@ say() { echo "$*" | tee -a "$REPORT"; }
 EP_RE='^series/[a-z0-9_-]+/ep[0-9]{2}r?\.js$'
 # what a writer's or replier's branch may touch; anything else and the whole branch is refused
 ALLOW_RE='^(series/[a-z0-9_-]+/(ep[0-9]{2}r?\.js|bible\.md|scenes\.js)|series/_ideas\.md|series/LESSONS\.md|kit/[a-z0-9_-]+\.js|state/comments/outbox\.json)$'
-DENY_RE='^kit/(v2|index|captions|trassa)\.js$'
+DENY_RE='^kit/(v2|index|captions|trassa|people)\.js$'
 BOT=(-c user.name=serials-bot -c user.email=serials-bot@users.noreply.github.com)
 
 fetch_branch() { # sets CHANGED, or returns 1 with the reason in WHY

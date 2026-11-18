@@ -1,6 +1,7 @@
 // Trusted step of the publish machine: takes what the build machine reports (ci-result.json is data, never code)
 // and writes it into state/queue.json. New episodes are registered here, so the writer never edits the queue.
-// Episode files are read as text only: the title, an optional `slot: 'HH:MM'` (a time test, 10:00-22:59 Moscow)
+// Episode files are read as text only: the title, an optional `slot: 'HH:MM'` (a time test, 10:00-22:59 Moscow),
+// the two options of the viewer's choice (`choice: { a: '…', b: '…' }`, counted later by publish/comments.mjs)
 // and the kind of file (epNN.js = an episode of the main line, epNNr.js = a remake of episode NN).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,6 +33,9 @@ for (const r of Array.isArray(res) ? res : []) {
   if (title) e.title = title[1].replace(/['"`]/g, '').split(',').map((s) => s.trim()).join(' ').slice(0, 60);
   const slot = /^\s*slot:\s*['"](1\d|2[0-2]):([0-5]\d)['"]/m.exec(src);
   if (slot) e.slot = `${slot[1]}:${slot[2]}`; else delete e.slot;
+  // the viewer's choice at the end of the episode: choice: { a: 'Открыть люк', b: 'Ждать ночи' } (letters, digits, spaces)
+  const ch = /^\s*choice:\s*\{\s*a:\s*'([^'\n]{2,40})'\s*,\s*b:\s*'([^'\n]{2,40})'/m.exec(src), clean = (t) => t.replace(/[^а-яёА-ЯЁa-zA-Z0-9 -]/g, '').trim();
+  if (ch && clean(ch[1]) && clean(ch[2])) e.choice = { a: clean(ch[1]), b: clean(ch[2]) }; else delete e.choice;
   if (r.ok === true && fs.existsSync(`out/${r.id}/video.mp4`)) {
     Object.assign(e, { status: 'ready', out: `out/${r.id}`, builtAt: stamp(), builtOn: 'github', seconds: Math.round(Number(r.dur) || 0) });
     delete e.failNote;

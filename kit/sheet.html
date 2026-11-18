@@ -1,0 +1,23 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: Mont; font-weight: 800; src: url(/fonts/Montserrat-ExtraBold.ttf); }
+  @font-face { font-family: Mont; font-weight: 600; src: url(/fonts/Montserrat-SemiBold.ttf); }
+  html, body { margin: 0; background: #101418; }
+  #grid { display: grid; gap: 14px; padding: 14px; width: max-content; }
+  .cell { position: relative; }
+  .cell b { position: absolute; left: 10px; top: 8px; font: 800 30px Mont; color: #fff; background: #000a; padding: 2px 12px; border-radius: 8px; }
+  svg { display: block; }
+</style>
+<div id="grid"></div>
+<script type="module">
+  // A sheet of frames for a quick look: ?m=/path/to/module.js&cols=4&w=360. The module exports default [{ label, svg }].
+  import { defs } from '/kit/v2.js';
+  const q = new URLSearchParams(location.search), cols = Number(q.get('cols') || 4), w = Number(q.get('w') || 360);
+  const frames = (await import(q.get('m'))).default;
+  const grid = document.getElementById('grid');
+  grid.style.gridTemplateColumns = `repeat(${cols}, ${w}px)`;
+  grid.innerHTML = frames.map((f) => `<div class="cell"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 ${f.h || 1920}" width="${w}" height="${(w * (f.h || 1920)) / 1080}"><defs>${defs(0)}</defs>${f.svg}</svg>${f.label ? `<b>${f.label}</b>` : ''}</div>`).join('');
+  await Promise.all([document.fonts.load('800 60px Mont', 'АЯ'), document.fonts.load('600 40px Mont', 'АЯ')]);
+  window.ready = true;
+</script>

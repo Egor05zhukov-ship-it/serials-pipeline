@@ -1,4 +1,5 @@
-// Details of the series «Колесо» on top of kit/v2.js (style 2): flat poster shapes, the same hand-drawn people.
+// Details of the series «Колесо» on top of kit/v2.js: flat poster shapes; the people are the ones of kit/people.js
+// (style 3, 19.11.2026), the dead are flat dark figures with pale eyes.
 // Same contract: pure JS, every function returns an SVG string for the 1080x1920 stage.
 // New in this series: every scene has its own flat colour (the critics of «Убежище»: one blue-teal colour for the
 // whole episode turns into a grey spot on a phone). The scenes of the series and their palettes:
@@ -10,7 +11,8 @@
 // Amber (#F2B441) is kept for the lights, the clues and the counters; captions are white (the theme draws them).
 // The ground (everything under FLOOR) is dark in every scene, so the white captions always stand on dark.
 import { clamp, lerp, rnd } from './index.js';
-import { V, FLOOR, ease, label, person, tag, rollTag, textW } from './v2.js';
+import { V, FLOOR, ease, label, tag, rollTag, textW } from './v2.js';
+import { human, shade, P } from './people.js';
 
 const n = (x) => Math.round(x * 100) / 100;
 const RAD = Math.PI / 180;
@@ -19,7 +21,9 @@ export const AMBER = V.amber;
 export const K = {
   varya: '#E8604C', // Varya's jacket: the mark of the heroes' cabin in every picture
   dad: '#6F9A97',
-  dead: '#8EA58A', // the dead: the same people, grey-green
+  dead: '#1F1428', deadEye: '#F6D9A6', // the dead: flat dark figures with pale eyes (colours of the sunset scene)
+  deadDay: '#6E8878', deadNight: '#0A1226', eyeDay: '#EEF3EF', eyeNight: '#AEBBD4',
+  dadHair: { style: 'short', col: P.hair.dark }, varyaHair: { style: 'tails', col: P.hair.ginger },
   crowd: ['#D9B88F', '#B9C2C1', '#C98B7A', '#9DB4D6'],
   ink: '#21364F',
 };
@@ -110,17 +114,15 @@ export const platform = ({ cx = 540, y = 1160, pal, booth = true } = {}) =>
   <rect x="${cx + 318}" y="${y - 118}" width="94" height="66" rx="6" fill="${pal.win}"/>` : ''}`;
 
 // ---------- people ----------
-// a person drawn at size s with everything scaled (the outline too): small figures stay light, not blobs
-export const tiny = ({ x, y, s = 0.3, ...o }) => `<g transform="translate(${n(x)} ${n(y)}) scale(${n(s)})">${person({ x: 0, y: 0, ...o })}</g>`;
-// the dead: grey-green, leaning, swaying slowly
-export const dead = ({ x, y, s = 0.3, t = 0, seed = 0, lean = 1, look = 0, lookY = -0.4 }) => {
-  const tl = lean * (5 + 4 * rnd(seed + 11)) * (rnd(seed + 3) < 0.5 ? -1 : 1) + 1.6 * Math.sin(t * 0.9 + seed);
-  return tiny({ x, y, s, col: K.dead, t, seed, tilt: tl, look, lookY });
-};
+// a person of kit/people.js drawn at size s with everything scaled (the outline too): small figures stay light
+export const tiny = ({ x, y, s = 0.3, ...o }) => `<g transform="translate(${n(x)} ${n(y)}) scale(${n(s)})">${human({ x: 0, y: 0, shadow: false, ...o })}</g>`;
+// the dead: a flat dark figure with pale eyes, leaning, swaying slowly, the arms hanging unevenly
+export const dead = ({ x, y, s = 0.3, t = 0, seed = 0, lean = 1, look = 0, lookY = -0.4, col = K.dead, eyes = K.deadEye }) =>
+  `<g transform="translate(${n(x)} ${n(y)}) scale(${n(s)})">${shade({ x: 0, y: 0, col, eyes, t, seed, lean: lean * (5 + 4 * rnd(seed + 11)) * (rnd(seed + 3) < 0.5 ? -1 : 1), armL: 4 + 34 * rnd(seed + 5), armR: 4 + 34 * rnd(seed + 9), look, lookY })}</g>`;
 // a crowd of the dead between x0 and x1, standing on y (deeper ones a little higher and smaller)
-export const deadCrowd = ({ x0, x1, y, count = 20, s = 0.3, t = 0, seed = 1, depth = 26, look = 0, lookY = -0.6 }) => {
+export const deadCrowd = ({ x0, x1, y, count = 20, s = 0.3, t = 0, seed = 1, depth = 26, look = 0, lookY = -0.6, col = K.dead, eyes = K.deadEye }) => {
   const list = Array.from({ length: count }, (_, i) => ({ i, x: lerp(x0, x1, (i + 0.5 * rnd(seed + i * 7)) / count), d: rnd(seed + i * 13) }));
-  return list.sort((a, b) => a.d - b.d).map((m) => dead({ x: m.x, y: y - depth * (1 - m.d), s: s * (0.9 + 0.12 * m.d), t, seed: seed + m.i, look, lookY })).join('');
+  return list.sort((a, b) => a.d - b.d).map((m) => dead({ x: m.x, y: y - depth * (1 - m.d), s: s * (0.9 + 0.12 * m.d), t, seed: seed + m.i, look, lookY, col, eyes })).join('');
 };
 
 // ---------- a cabin from inside ----------

@@ -1,25 +1,27 @@
-// Runs on the publish machine after every sync. If an account has nothing on the air plan for tomorrow (Moscow time),
-// it opens a GitHub issue: GitHub mails the repository owner, so a stalled writer is not silent for days again
-// (17-18.11.2026 the writer routines vanished with a change of the Claude account and nobody knew).
-// When the stock is back, the issue is closed with a comment. Needs GH_TOKEN with issues: write; without it, only prints.
+// Runs on the publish machine after every sync. Since 19.11.2026 an episode is written after the viewers have voted
+// under the previous one, so there is no stock for tomorrow: the question is whether every account has an episode
+// TODAY (Moscow time). If one has not by the evening check, a GitHub issue is opened and the run fails on purpose:
+// GitHub mails the repository owner, so a stalled writer is not silent for days again (17-18.11.2026 the writer
+// routines vanished with a change of the Claude account and nobody knew).
+// When things are back, the issue is closed with a comment. Needs GH_TOKEN with issues: write; without it, only prints.
 import fs from 'node:fs';
 
 const q = JSON.parse(fs.readFileSync('state/queue.json', 'utf8'));
 const msk = new Date(Date.now() + 3 * 3600e3), today = msk.toISOString().slice(0, 10);
-const tomorrow = new Date(Date.parse(today + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10);
+const tomorrow = today; // the texts below speak about the day that is checked
 const short = (d) => d.slice(8, 10) + '.' + d.slice(5, 7);
-const TITLE = 'Нет серии на завтра';
-const empty = [];
+const TITLE = 'Нет серии на сегодня';
+const empty = [], hold = new Set(q.hold || []);
 for (const [nick, a] of Object.entries(q.accounts)) {
   if (a.paused) continue;
-  const eps = q.episodes.filter((e) => e.account === nick);
-  const ok = eps.some((e) => ['ready', 'written'].includes(e.status) || (e.status === 'scheduled' && (e.scheduledFor || '').slice(0, 10) >= tomorrow));
-  if (!ok) empty.push(nick);
+  const eps = q.episodes.filter((e) => e.account === nick && !e.remake && !hold.has(e.series));
+  const on = (e) => (e.status === 'scheduled' && (e.scheduledFor || '').slice(0, 10) >= today) || (e.status === 'published' && (e.publishedAt || e.scheduledFor || '').slice(0, 10) === today);
+  if (!eps.some((e) => on(e) || ['ready', 'written'].includes(e.status))) empty.push(nick);
 }
 const failed = q.episodes.filter((e) => e.status === 'failed').map((e) => `${e.id}: ${String(e.failNote || '').slice(0, 200)}`);
 console.log(JSON.stringify({ today, tomorrow, empty, failed }));
 
-// exit code 3 = «nothing for tomorrow» at the evening check: ci/run.sh then fails the scheduled run and GitHub mails the owner
+// exit code 3 = «nothing today» at the evening check: ci/run.sh then fails the scheduled run and GitHub mails the owner
 const code = empty.length && new Date().getUTCHours() >= 14 ? 3 : 0;
 const token = process.env.GH_TOKEN, repo = process.env.GITHUB_REPOSITORY;
 if (!token || !repo) process.exit(code);
@@ -33,9 +35,9 @@ const open = (await gh('GET', '/issues?state=open&per_page=50')).filter((i) => i
 if (empty.length) {
   if (!open.length) {
     const body = [
-      `На ${short(tomorrow)} нет готовой серии: ${empty.map((n) => '@' + n).join(', ')}.`,
+      `Сегодня, ${short(today)}, нет серии: ${empty.map((n) => '@' + n).join(', ')}.`,
       '',
-      'Автор серий не прислал новых серий. Чаще всего причина в том, что облачные задачи Claude (serials-writer, serials-replier) остались на другом аккаунте Claude или кончился лимит.',
+      'Автор серий не прислал серию после вчерашнего голосования. Чаще всего причина в том, что облачные задачи Claude (serials-writer, serials-replier) остались на другом аккаунте Claude или кончился лимит.',
       'Что сделать: открыть сессию Claude на Маке и написать «проверь автономность» — задачи пересоздаются, автор запускается вручную.',
       failed.length ? `\nСерии, которые не собрались:\n- ${failed.join('\n- ')}` : '',
     ].join('\n');
@@ -44,7 +46,7 @@ if (empty.length) {
   } else console.log(`issue already open: ${open[0].html_url}`);
 } else {
   for (const i of open) {
-    await gh('POST', `/issues/${i.number}/comments`, { body: `Серии на ${short(tomorrow)} есть у всех аккаунтов, закрываю.` });
+    await gh('POST', `/issues/${i.number}/comments`, { body: `Серии на ${short(today)} есть у всех аккаунтов, закрываю.` });
     await gh('PATCH', `/issues/${i.number}`, { state: 'closed' });
     console.log(`issue closed: ${i.html_url}`);
   }
