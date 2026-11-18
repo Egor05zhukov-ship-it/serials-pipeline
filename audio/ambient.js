@@ -19,4 +19,8 @@ export const bedArgs = (dur) => {
 // so knocks, doors and other concrete sounds should come from real recordings, not from code.)
 export const hitSrc = () => `anoisesrc=color=brown:d=3:amplitude=1:r=48000,lowpass=f=220,volume='3*exp(-5*t)':eval=frame[n];aevalsrc='(0.9*sin(2*PI*52*t)+0.5*sin(2*PI*104*t))*exp(-2.2*t)':d=3:s=48000[s];[n][s]amix=inputs=2:normalize=0,aecho=0.8:0.6:210:0.3[out0]`;
 
-export const SFX = { hit: hitSrc };
+// Growl of the tiger in «Вольер» (no recording in the library): brown noise through a low-pass filter, trembling at
+// 29 and 33.5 Hz (two tremolos beat against each other, so the shake is uneven), swelling in and dying away over 1.9 s.
+export const growlSrc = () => `anoisesrc=color=brown:d=1.9:amplitude=1:r=48000,lowpass=f=240,lowpass=f=240,highpass=f=45,tremolo=f=29:d=0.75,tremolo=f=33.5:d=0.4,volume=3,afade=t=in:d=0.6:curve=qsin,afade=t=out:st=0.95:d=0.95:curve=qsin[out0]`;
+
+export const SFX = { hit: hitSrc, growl: growlSrc };
