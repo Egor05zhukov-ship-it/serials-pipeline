@@ -64,9 +64,21 @@ async function run(only, dry) {
     if (!fs.existsSync(video) || !fs.existsSync(cap)) { out.push({ id: e.id, skipped: `no ${path.relative(ROOT, video)} here: build it first` }); continue; }
     if (dry) { out.push({ id: e.id, account: e.account, at }); Object.assign(e, { status: 'scheduled', scheduledFor: at }); continue; }
     const trial = Boolean(e.remake) && q.accounts[e.account].trial !== false;
-    const r = await postReel({ accountId, video, cover: fs.existsSync(cover) ? cover : null, caption: fs.readFileSync(cap, 'utf8').trim(), at,
-      idem: `${e.id}:${at}:${fs.statSync(video).size}:${Math.round(fs.statSync(video).mtimeMs / 1000)}`, // a rebuilt video is a new post, not a replay of the old request
-      extra: trial ? { trialParams: { graduationStrategy: 'SS_PERFORMANCE' } } : null });
+    // Our own first comment gives the viewers a place to vote and the comment section is not empty from minute one.
+    // The docs promise firstComment for feed posts; if Zernio refuses it for a Reel (400), the reel goes out without it.
+    const vote = e.choice && !trial && q.firstComment !== false ? `Голосуй здесь: А — ${e.choice.a.toLowerCase()}, Б — ${e.choice.b.toLowerCase()}. Ответь на этот комментарий буквой.` : null;
+    const idem = `${e.id}:${at}:${fs.statSync(video).size}:${Math.round(fs.statSync(video).mtimeMs / 1000)}`; // a rebuilt video is a new post, not a replay of the old request
+    const send = (withVote) => postReel({ accountId, video, cover: fs.existsSync(cover) ? cover : null, caption: fs.readFileSync(cap, 'utf8').trim(), at,
+      idem: withVote ? idem : `${idem}:plain`,
+      // audioName: the reel's sound is called after the series, so every episode is found by one tap on the sound
+      extra: { ...(trial ? { trialParams: { graduationStrategy: 'SS_PERFORMANCE' } } : {}), ...(withVote ? { firstComment: vote } : {}), ...(withVote && e.title ? { audioName: `${e.title} · серия ${e.number}`.slice(0, 60) } : {}) } });
+    let r;
+    try { r = await send(Boolean(vote)); } catch (err) {
+      if (!vote || err.status !== 400) throw err;
+      log({ event: 'first-comment-refused', episode: e.id, why: JSON.stringify(err.body || '').slice(0, 200) });
+      q.firstComment = false; // do not try again for the next episodes
+      r = await send(false);
+    }
     Object.assign(e, { status: 'scheduled', scheduledFor: at, zernioPostId: r.post._id, ...(trial ? { trial: true } : {}) });
     // the story teaser of the episode (tools/story.mjs) goes out four minutes after the reel; the owner or a Mac session
     // then files it under the series' highlight (the API can neither do that nor put a link on a story)

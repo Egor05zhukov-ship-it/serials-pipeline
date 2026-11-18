@@ -267,15 +267,15 @@ export const endCard = ({ t = 9, p = 1, line = 'Продолжение завт�
 // the voice that names the two options and calls for comments. a, b, c = seconds since option A, option B and the call
 // were named (c.since of their phrases); optA / optB in caps, two or three words each. The shot hides the captions:
 // give it caption: { hide: true }.
-export const choiceCard = ({ a = 9, b = 9, c = 9, q = 'ЧТО ДЕЛАТЬ?', optA = '', optB = '', call = 'ПИШИ В КОММЕНТАРИЯХ', p = 1, back = V.floor, fill = V.mid }) => {
+export const choiceCard = ({ a = 9, b = 9, c = 9, q = 'ЧТО ДЕЛАТЬ?', optA = '', optB = '', call = 'ПИШИ В КОММЕНТАРИЯХ', call2 = '', p = 1, back = V.floor, fill = V.mid }) => {
   const plate = (y, letter, str, u) => {
     if (u <= 0) return '';
     const e = ease(u / 0.35), fs = Math.min(66, (650 / textW(str, 66, 1)) * 66);
     return `<g opacity="${n(e)}" transform="translate(${n((1 - e) * 40)} 0)"><rect x="80" y="${y}" width="920" height="176" rx="38" fill="${fill}"/><circle cx="184" cy="${y + 88}" r="58" fill="${V.amber}"/>${label(184, y + 88 + 26, letter, { size: 74, fill: V.floor })}${label(278, y + 88 + fs * 0.355, str, { size: n(fs), anchor: 'start' })}</g>`;
   };
-  const k = ease(c / 0.35);
-  return `${bg(back)}<g transform="translate(540 960) scale(${(1 + 0.03 * sine(p)).toFixed(5)}) translate(-540 -960)">${label(540, 500, q, { size: 96 })}${plate(600, 'А', optA, a)}${plate(820, 'Б', optB, b)}
-  ${c > 0 ? `<g opacity="${n(k)}" transform="translate(0 ${n((1 - k) * 20)})">${label(540, 1150, call, { size: 60, fill: V.amber, ls: 2 })}</g>` : ''}</g>`;
+  const k = ease(c / 0.35), qs = Math.min(96, (940 / textW(q, 96, 1)) * 96);
+  return `${bg(back)}<g transform="translate(540 960) scale(${(1 + 0.03 * sine(p)).toFixed(5)}) translate(-540 -960)">${label(540, 500, q, { size: n(qs) })}${plate(600, 'А', optA, a)}${plate(820, 'Б', optB, b)}
+  ${c > 0 ? `<g opacity="${n(k)}" transform="translate(0 ${n((1 - k) * 20)})">${label(540, 1150, call, { size: 60, fill: V.amber, ls: 2 })}${call2 ? label(540, 1232, call2, { size: 44, weight: 600, fill: V.white }) : ''}</g>` : ''}</g>`;
 };
 
 // Cover for the profile grid: the frame of the series (art), the tag «СЕРИЯ N», the title in caps and a ribbon.

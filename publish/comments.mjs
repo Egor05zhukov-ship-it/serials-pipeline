@@ -39,14 +39,14 @@ export function voteOf(text, choice) {
   const forA = A.yes || (B.no && !B.yes), forB = B.yes || (A.no && !A.yes);
   return forA === forB ? null : forA ? 'a' : 'b';
 }
-function countVotes(posts) {
+function countVotes(posts, said = new Map()) {
   const q = read('state/queue.json', { episodes: [] }), votes = read(VOTES, {});
   for (const e of q.episodes) {
     if (!e.choice || !e.postUrl) continue;
     const p = posts.find((x) => x.permalink && shortcode(x.permalink) === shortcode(e.postUrl));
     if (!p) { votes[e.id] = votes[e.id] || { a: 0, b: 0, other: 0, labels: e.choice, updated: stamp() }; continue; } // no comments yet
     const v = { a: 0, b: 0, other: 0 };
-    for (const c of p.comments || []) v[voteOf(c.text, e.choice) || 'other']++;
+    for (const text of said.get(p.postId) || (p.comments || []).map((c) => c.text)) v[voteOf(text, e.choice) || 'other']++;
     votes[e.id] = { ...v, labels: e.choice, updated: stamp() };
   }
   fs.writeFileSync(VOTES, JSON.stringify(votes, null, 1) + '\n');
@@ -54,7 +54,7 @@ function countVotes(posts) {
 }
 
 async function fetchAll() {
-  const done = read(DONE, {}), posts = [];
+  const done = read(DONE, {}), posts = [], said = new Map(); // said: every viewer's line under a post, answers to our own comments included (for the votes)
   for (const [nick, a] of Object.entries(z.accounts)) {
     if (!a.accountId) continue;
     let list;
@@ -64,8 +64,12 @@ async function fetchAll() {
       try {
         const r = await api('GET', `/inbox/comments/${p.id}`, { query: { accountId: a.accountId, limit: 100 } });
         // shape checked 18.11.2026: {id, message, createdTime, from{username, isOwner}, replies[...same], canReply}
+        const lines = [];
+        said.set(post.postId, lines);
         for (const c of (r.data || r.comments || []).slice(0, 100)) {
           const id = String(pick(c, ['id', 'commentId', '_id']) || ''), text = String(pick(c, ['message', 'text', 'content']) || '').slice(0, 500);
+          if (text && !c.from?.isOwner) lines.push(text);
+          for (const x of c.replies || []) { const rt = String(pick(x, ['message', 'text', 'content']) || '').slice(0, 500); if (rt && !x.from?.isOwner) lines.push(rt); }
           if (!id || !text || c.from?.isOwner) continue; // our own comments are not answered
           const ownerReplied = (c.replies || []).some((x) => x.from?.isOwner); // the owner or an earlier run already answered
           // names and avatars are not kept: this is a public repository
@@ -76,7 +80,7 @@ async function fetchAll() {
     }
   }
   save(IN, { fetchedAt: stamp(), posts });
-  const votes = countVotes(posts);
+  const votes = countVotes(posts, said);
   return { votes: Object.fromEntries(Object.entries(votes).slice(-4).map(([k, v]) => [k, `${v.a}:${v.b}`])), posts: posts.length, comments: posts.reduce((s, p) => s + (p.comments || []).length, 0), errors: posts.filter((p) => p.error).map((p) => p.error.slice(0, 160)) };
 }
 

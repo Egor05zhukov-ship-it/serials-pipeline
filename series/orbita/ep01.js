@@ -1,46 +1,50 @@
-// «Орбита», серия 1 «Стук». Аккаунт «Третье правило». Формат 4 (19.11.2026).
-// One man on a space station, the Earth is silent, somebody knocks on the hatch from outside. Nobody is introduced,
-// nothing is explained: why the Earth is silent, who rubbed out the third rule, who is outside.
-// No cuts: the picture follows the words through c.at / c.since. Scenes and their colours: outside by day (hook),
-// the pale module (knock, air, again, swim), the call on a warm screen (call), the night Earth in the round window
-// (earth), the sheet of rules (rules), the man in the window (man), outside at night (noship), the patch (name).
-// Silent clue: the hero's own suit hangs in the airlock niche with the same amber patch (shot «air»), and the suit
-// outside shows its patch small in the window a few seconds before the voice names it.
+// «Орбита», серия 1 «Стук». Аккаунт «Третье правило». Третья редакция (19.11.2026): связный рассказ.
+// One thought from the first sentence to the last (series/SCENARIST.md, section 0): «я остался один на станции, Земля
+// молчит и возвращаться некуда, но сегодня в люк постучали снаружи, и на скафандре гостя моя фамилия». Whole sentences
+// tied with «а / и / хотя»; nobody is introduced and nothing is explained (why the Earth is silent, who is outside).
+// One row of N = one sentence = one voice file; «|» only cuts the caption into chunks. Inside a long sentence the
+// picture changes by the share of its length (c.since / c.dur).
+// Scenes and their colours: outside by day (hook), the call on a warm screen (call), the night Earth in the round
+// window (earth), the pale module (air, knock), the man in the window (seen, man), outside at night (inside «seen»),
+// the patch (name), the choice card.
+// Silent clue: the hero's own suit hangs in the niche with the same amber patch (shot «air»); the suit outside shows
+// its patch small in the window before the voice names it.
 import { clamp, lerp } from '../../kit/index.js';
 import { theme, sine, ease, cam, choiceCard } from '../../kit/v2.js';
 import { human, P } from '../../kit/people.js';
-import { O, space, earth, station, hatchAt, suit, hero, moduleRoom, porthole, hatch, shake, rulesCard, tablet, lookOut, knockDots, midTag, band } from '../../kit/orbita.js';
+import { O, space, earth, station, hatchAt, suit, hero, moduleRoom, porthole, hatch, shake, tablet, lookOut, midTag, band } from '../../kit/orbita.js';
 
 const N = [
-  { id: 'one', text: 'Я остался один на космической станции, | а Земля не отвечает уже *третий день*.', gap: 0.55 },
-  { id: 'dau', text: 'Последней на связь вышла *дочь*.', gap: 0.4 },
-  { id: 'dont', text: 'Она успела сказать только одно: | «Папа, *не спускайся*».', say: 'Она успела сказать только одно. Папа, не спускайся.', gap: 0.6 },
-  { id: 'gas', text: 'Той же ночью внизу один за другим | погасли *огни городов*.', gap: 0.6 },
-  { id: 'air', text: 'Воздуха на станции хватит на *сорок дней*, | и вернуться мне некуда.', gap: 0.6 },
-  { id: 'knock', text: 'А сегодня в люк *постучали*.', gap: 0.35 },
+  { id: 'one', text: 'Я остался один | на космической станции, | а Земля не отвечает | уже *третий день*.', gap: 0.55 },
+  { id: 'dau', text: 'Последней на связь вышла дочь | и успела сказать только одно: | «Папа, *не спускайся*».', say: 'Последней на связь вышла дочь и успела сказать только одно. Папа, не спускайся.', gap: 0.6 },
+  { id: 'gas', text: 'Той же ночью внизу | один за другим | погасли *огни городов*.', gap: 0.6 },
+  { id: 'air', text: 'Воздуха у меня на *сорок дней*, | а возвращаться, похоже, некуда.', gap: 0.6 },
+  { id: 'knock', text: 'Сегодня в люк *постучали*.', gap: 0.35 },
   { id: 'outside', text: '*Снаружи*.', gap: 0.6 },
-  { id: 'swim', text: 'Я подплыл к окну | и увидел человека в *скафандре*.', gap: 0.5 },
-  { id: 'noship', text: 'Ни один корабль к станции *не подлетал*.', gap: 0.5 },
-  { id: 'visor', text: 'Стекло его шлема было тёмным, | лица я *не видел*.', gap: 0.45 },
-  { id: 'lock', text: 'Он поднял руку и показал на *люк*.', gap: 0.55 },
-  { id: 'name', text: 'А на его скафандре была | *моя фамилия*.', gap: 0.8 },
-  { id: 'q', text: 'Что делать?', gap: 0.35 },
-  { id: 'optA', text: 'Вариант А. Открыть люк.', gap: 0.35 },
-  { id: 'optB', text: 'Вариант Б. Затаиться.', gap: 0.4 },
-  { id: 'call', text: 'Пиши в комментариях.' },
+  { id: 'seen', text: 'Я подтянулся к окну | и увидел человека *в скафандре*, | хотя ни один корабль | к станции не подлетал.', gap: 0.5 },
+  { id: 'visor', text: 'Стекло его шлема было тёмным, | и я не видел, *кто внутри*.', gap: 0.45 },
+  { id: 'lock', text: 'Он протянул руку | и показал на люк: | просил *открыть*.', gap: 0.55 },
+  { id: 'name', text: 'И тогда я заметил, | что на его скафандре | написана *моя фамилия*.', gap: 0.8 },
+  { id: 'ask', text: 'Как бы ты поступил: открыл люк или затаился?', gap: 0.4 },
+  { id: 'call', text: 'Напиши в комментариях и перешли другу: пусть выберет тоже.' },
 ];
 const U = Object.fromEntries(N.map((u, i) => [u.id, i]));
-const n = (x) => Math.round(x * 100) / 100;
+const mix = (a, b, k) => (k <= 0 ? a : k >= 1 ? b : `${a}<g opacity="${k.toFixed(3)}">${b}</g>`);
 // the picture of the hook: the station over the day side of the Earth (also the cover)
 const hookArt = (k = 0) => space() + earth({ top: lerp(1090, 1050, k) }) + station({ x: 540, y: 610, s: lerp(1, 1.1, k) });
 // the girl on the screen of the call: only her head and shoulders fit the screen
 const girl = (o) => human({ x: 540, y: 1424, k: 2.5, col: O.girl, hair: { style: 'bob', col: P.hair.black }, wear: 'tee', seed: 1, shadow: false, armL: 4, armR: 4, style: { nohair: false }, ...o });
+// the man outside, seen through the round window; up = 0..1 his arm goes up
+const outside = (p, c, { up = 0, s0 = 1, s1 = 1.14 } = {}) => {
+  const view = space({ seed: 9 }) + suit({ x: 560, y: 1150, k: 1.25, tilt: -7, armL: 18, armR: lerp(18, 152, up), t: c.t });
+  return cam(lookOut({ view }), { s: lerp(s0, s1, sine(p)), cx: 540, cy: 700 }) + band(1240);
+};
 
 export default {
   series: 'Орбита',
   episode: 1,
   theme,
-  gap: 0.25,
+  gap: 0.3,
   tail: 0.5,
   endCardDur: 2.4,
   narration: N,
@@ -53,10 +57,10 @@ export default {
       },
     },
     {
-      id: 'call', from: U.dau, // the last call from home on a floating tablet: the daughter, then «no signal»
+      id: 'call', from: U.dau, // the last call from home on a floating tablet: the daughter says her words, then «no signal»
       draw(p, t, c) {
-        const w = ease((c.since(U.dont) - 0.5 * c.dur(U.dont)) / 0.4), off = (c.since(U.dont) - c.dur(U.dont) - 0.1) / 0.25;
-        const face = girl({ t: c.t, lookY: -0.1, worry: w, wide: 0.75 * w, mouth: w > 0.5 ? 'o' : 'line' });
+        const d = c.dur(U.dau), g = c.since(U.dau), w = ease((g - 0.6 * d) / 0.4), off = (g - d - 0.05) / 0.25;
+        const face = girl({ t: c.t, lookY: -0.1, worry: w, mouth: w > 0.5 ? 'o' : 'none' });
         return moduleRoom() + tablet({ x: 540, y: 660, face, off, rot: lerp(-3, -1, sine(p)) }) + band();
       },
     },
@@ -74,7 +78,7 @@ export default {
         const niche = `<rect x="80" y="470" width="290" height="700" rx="40" fill="${O.rib}"/><rect x="120" y="500" width="210" height="18" rx="9" fill="${O.wheel}"/>`;
         const scene = moduleRoom() + porthole({ x: 840, y: 640, r: 150, view: earth({ top: 660, r: 620, cx: 840, night: true, lit: 0, home: 0 }) })
           + niche + suit({ x: 225, y: 1120, k: 0.86, armL: 3, armR: 3, t: 0 })
-          + hero({ x: 610, y: 1090, k: 1.08, t: c.t, look: -0.3, lookY: 0.2, worry: 0.5, tilt: -6 });
+          + hero({ x: 610, y: 1090, k: 1.08, t: c.t, look: 0.5, lookY: -0.2, worry: 0.6, tilt: -6 });
         return cam(scene, { s: lerp(1.02, 1.1, sine(p)), cx: 540 }) + midTag({ text: 'ВОЗДУХА НА 40 ДНЕЙ', y: 230, size: 72, a: (t - 0.05) / 0.35 });
       },
     },
@@ -83,57 +87,52 @@ export default {
       draw(p, t, c) {
         const k0 = c.since(U.knock) - 0.78 * c.dur(U.knock), kn = [k0, k0 - 0.22, k0 - 0.42]; // the three knocks of the recording
         const push = sine((c.since(U.outside) + 0.15) / 1.3);
-        return cam(moduleRoom() + hatch({ x: 540, y: 690, r: 300, dx: shake(kn, 11), dy: shake(kn.map((u) => u - 0.03), 5) }), { s: lerp(1, 1.5, push), cx: 540, cy: 690 }) + band();
+        return cam(moduleRoom() + hatch({ x: 540, y: 690, r: 300, dx: shake(kn, 11), dy: shake(kn.map((u) => u - 0.03), 5), sticker: false }), { s: lerp(1, 1.5, push), cx: 540, cy: 690 }) + band();
       },
     },
     {
-      id: 'seen', from: U.swim, // through the round window: a man in a suit hangs outside, the visor is dark; he lifts a hand
+      id: 'seen', from: U.seen, // through the round window: a man in a suit; on «ни один корабль» the station from outside, nothing near it
       draw(p, t, c) {
-        const up = 0;
-        const view = space({ seed: 9 }) + suit({ x: 560, y: 1150, k: 1.25, tilt: -7, armL: 18, armR: lerp(18, 152, up), t: c.t });
-        return cam(lookOut({ view }), { s: lerp(1, 1.16, sine(p)), cx: 540, cy: 700 }) + band(1240);
-      },
-    },
-    {
-      id: 'noship', from: U.noship, // outside, the dark side: the station, its one small ship, the small figure at the hatch, nothing else
-      draw(p, t, c) {
-        const st = { x: 520, y: 640, s: lerp(0.9, 0.74, sine(p)), rot: -8 }, h = hatchAt(st);
-        return space({ seed: 12 }) + earth({ top: lerp(1130, 1170, sine(p)), night: true, lit: 0, home: 0 }) + station(st)
+        const k = ease((c.since(U.seen) - 0.58 * c.dur(U.seen)) / 0.45);
+        const man = outside(p, c);
+        if (k <= 0) return man;
+        const st = { x: 520, y: 640, s: lerp(0.9, 0.76, sine(p)), rot: -8 }, h = hatchAt(st);
+        const far = space({ seed: 12 }) + earth({ top: 1150, night: true, lit: 0, home: 0 }) + station(st)
           + suit({ x: h.x + 44 * st.s, y: h.y + 150 * st.s, k: 0.34 * st.s, tilt: -24, t: c.t, name: '' });
+        return mix(man, far, k);
       },
     },
     {
-      id: 'man', from: U.visor, // through the round window: a man in a suit hangs outside, the visor is dark; he lifts a hand
+      id: 'man', from: U.visor, // closer: the dark visor; then he lifts a hand and points at the hatch
       draw(p, t, c) {
-        const up = ease((c.since(U.lock) - 0.05) / 0.8);
-        const view = space({ seed: 9 }) + suit({ x: 560, y: 1150, k: 1.25, tilt: -7, armL: 18, armR: lerp(18, 152, up), t: c.t });
-        return cam(lookOut({ view }), { s: lerp(1.16, 1.3, sine(p)), cx: 540, cy: 700 }) + band(1240);
+        return outside(p, c, { up: ease((c.since(U.lock) - 0.05) / 0.8), s0: 1.16, s1: 1.3 });
       },
     },
     {
-      id: 'name', from: U.name, caption: { size: 96, max: 940, push: 0.04 }, // the chest of the suit outside, close: the amber patch
+      id: 'name', from: U.name, caption: { size: 92, max: 940, push: 0.04 }, // the chest of the suit outside, close: the amber patch
       draw(p, t, c) {
         const scene = space({ stars: false }) + suit({ x: 540, y: 1690, k: 3.6, tilt: -3, armL: 10, armR: 10, t: c.t * 0.4 });
         return cam(scene, { s: lerp(1, 1.09, sine(p)), cx: 540, cy: 720 }) + band(1190);
       },
     },
     {
-      id: 'choice', from: U.q, caption: { hide: true }, // the viewer's choice
+      id: 'choice', from: U.ask, caption: { hide: true }, // the viewer's choice and the reason to forward the episode
       draw(p, t, c) {
-        return choiceCard({ p, a: c.since(U.optA) + 0.1, b: c.since(U.optB) + 0.1, c: c.since(U.call) + 0.1, optA: 'ОТКРЫТЬ ЛЮК', optB: 'ЗАТАИТЬСЯ', back: O.band, fill: '#1C2C47' });
+        const d = c.dur(U.ask), g = c.since(U.ask);
+        return choiceCard({ p, q: 'КАК БЫ ТЫ ПОСТУПИЛ?', a: g - 0.34 * d, b: g - 0.66 * d, c: c.since(U.call) + 0.05, optA: 'ОТКРЫТЬ ЛЮК', optB: 'ЗАТАИТЬСЯ', call: 'НАПИШИ В КОММЕНТАРИЯХ', call2: 'и перешли другу: пусть выберет тоже', back: O.band, fill: '#1C2C47' });
       },
     },
   ],
   sfx: [
     { type: 'impact-low', phrase: 'one', vol: 0.5 },
-    { type: 'radio-static', phrase: 'dont', at: 1, vol: 0.35 },
+    { type: 'radio-static', phrase: 'dau', at: 1, vol: 0.35 },
     { type: 'impact-low', phrase: 'gas', at: 0.88, vol: 0.45 },
     { type: 'knock-door', phrase: 'knock', at: 0.78, vol: 0.9 },
-    { type: 'impact-low', phrase: 'swim', at: 0.6, vol: 0.6 },
+    { type: 'impact-low', phrase: 'seen', at: 0.3, vol: 0.6 },
     { type: 'knock-door', phrase: 'lock', at: 1, vol: 0.9 },
-    { type: 'impact-low', phrase: 'name', at: 0.55, vol: 0.8 },
+    { type: 'impact-low', phrase: 'name', at: 0.6, vol: 0.8 },
   ],
-  experiment: 'первая серия формата 4 не про зомби: космос, героя не представляем, восемь странностей за серию, выбор зрителя в конце; жду skipRate ниже 30 % и комментарии от 1 % охвата',
+  experiment: 'связный рассказ без перечислений (раздел 0 сценариста), не зомби, темп 1,05, вопрос и просьба переслать в конце; жду watched выше 0,55 и пересылки от 1 % охвата',
   endCard: { line: 'Продолжение завтра', sub: 'Серия 2' },
   cover: {
     ep: 1,
@@ -146,7 +145,8 @@ export default {
 
 «Орбита», серия 1.
 
-Что делать: А — открыть люк, Б — затаиться? Пиши в комментариях.
+Как бы ты поступил: А — открыть люк, Б — затаиться? Напиши в комментариях.
+Перешли тому, кому доверил бы этот люк.
 
 #орбита #космос #страшныеистории #минисериал #анимация`,
 };
