@@ -13,7 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { api, postReel } from './zernio.mjs';
+import { api, postReel, upload } from './zernio.mjs';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const QUEUE = path.join(ROOT, 'state/queue.json'), ZERNIO = path.join(ROOT, 'state/zernio.json'), LOG = path.join(ROOT, 'state/log.jsonl');
@@ -28,6 +28,7 @@ const addDays = (ymd, n) => new Date(Date.parse(ymd + 'T00:00:00Z') + n * 864e5)
 const slotOf = (acc, ymd) => ([0, 6].includes(new Date(ymd + 'T00:00:00Z').getUTCDay()) ? acc.slots.weekend : acc.slots.weekday);
 const dayOf = (e) => (e.scheduledFor || e.publishedAt || '').slice(0, 10);
 const lineOf = (e) => (e.remake ? 'remake' : 'main');
+const plusMin = (at, n) => new Date(Date.parse(at + ':00Z') + n * 60e3).toISOString().slice(0, 16);
 const timeOf = (acc, e, ymd) => e.slot || (e.remake ? acc.altSlot || '12:37' : slotOf(acc, ymd));
 
 // The next free day of the episode's line on its account: after the last scheduled or published episode of that line,
@@ -67,6 +68,16 @@ async function run(only, dry) {
       idem: `${e.id}:${at}:${fs.statSync(video).size}:${Math.round(fs.statSync(video).mtimeMs / 1000)}`, // a rebuilt video is a new post, not a replay of the old request
       extra: trial ? { trialParams: { graduationStrategy: 'SS_PERFORMANCE' } } : null });
     Object.assign(e, { status: 'scheduled', scheduledFor: at, zernioPostId: r.post._id, ...(trial ? { trial: true } : {}) });
+    // the story teaser of the episode (tools/story.mjs) goes out four minutes after the reel; the owner or a Mac session
+    // then files it under the series' highlight (the API can neither do that nor put a link on a story)
+    const story = path.join(ROOT, 'out', `${e.id}-story`, 'video.mp4');
+    if (!trial && q.stories !== false && fs.existsSync(story)) {
+      try {
+        const sv = await upload(story), sAt = plusMin(at, 4);
+        const sr = await api('POST', '/posts', { body: { content: '', mediaItems: [{ type: 'video', url: sv.publicUrl }], platforms: [{ platform: 'instagram', accountId, platformSpecificData: { contentType: 'story' } }], scheduledFor: sAt, timezone: 'Europe/Moscow' }, idem: `story:${e.id}:${sAt}` });
+        e.storyPostId = sr.post._id;
+      } catch (err) { log({ event: 'story-failed', episode: e.id, why: err.message }); }
+    }
     save(q);
     log({ event: 'scheduled', episode: e.id, account: e.account, for: at, post: r.post._id, ...(trial ? { trial: true } : {}) });
     out.push({ id: e.id, account: e.account, at, post: r.post._id, ...(trial ? { trial: true } : {}) });
@@ -109,8 +120,9 @@ async function unschedule(id) {
   const q = read(QUEUE), e = q.episodes.find((x) => x.id === id && x.status === 'scheduled');
   if (!e) throw new Error(`no scheduled episode ${id}`);
   await api('DELETE', `/posts/${e.zernioPostId}`);
+  if (e.storyPostId) await api('DELETE', `/posts/${e.storyPostId}`).catch(() => {});
   log({ event: 'unscheduled', episode: id, was: e.scheduledFor });
-  delete e.scheduledFor; delete e.zernioPostId; delete e.trial; e.status = 'ready';
+  delete e.scheduledFor; delete e.zernioPostId; delete e.storyPostId; delete e.trial; e.status = 'ready';
   save(q);
   return { id, status: 'ready' };
 }
