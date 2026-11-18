@@ -46,6 +46,9 @@ const ttsName = opt('tts', process.env.TTS || 'piper');
 const tts = await import(`./tts/${ttsName}.js`);
 const voiceTag = [ttsName, process.env.PIPER_MODEL, process.env.PIPER_PITCH, process.env.PIPER_SPEED, process.env.YANDEX_VOICE, process.env.ELEVENLABS_VOICE_ID, process.env.SAY_VOICE].join('|');
 const redo = new Set(String(opt('redo', '')).split(',').filter(Boolean).map(Number));
+// Pace (owner 18.11.2026: «голос не должен быть медленным»). The voice is sped up without changing its pitch and the
+// pauses between phrases are shortened; 1.12 and 0.65 put us at ~3.1 words a second inside speech (the hits run at 3.0).
+const TEMPO = Number(ep.tempo ?? process.env.VOICE_TEMPO ?? 1.12), GAPS = Number(ep.gapScale ?? process.env.GAP_SCALE ?? 0.65);
 const sent = [];
 let t = 0;
 for (const [i, u] of units.entries()) {
@@ -58,9 +61,14 @@ for (const [i, u] of units.entries()) {
     ff(['-i', raw, '-af', `${TRIM},afade=t=in:d=0.008,areverse,${TRIM},afade=t=in:d=0.03,areverse`, '-ar', '48000', '-ac', '1', wav]);
     fs.rmSync(raw, { force: true });
   }
-  const d = durOf(wav);
-  sent.push({ start: t, end: t + d, wav, pauses: pausesOf(wav) });
-  t += d + (u.gap ?? ep.gap ?? 0.2);
+  let take = wav; // the cache keeps the voice at its own pace; the faster copy is made from it and kept beside it
+  if (TEMPO !== 1) {
+    take = wav.replace(/\.wav$/, `.x${TEMPO}.wav`);
+    if (!fs.existsSync(take) || redo.has(i)) ff(['-i', wav, '-af', `atempo=${TEMPO}`, '-ar', '48000', '-ac', '1', take]);
+  }
+  const d = durOf(take);
+  sent.push({ start: t, end: t + d, wav: take, pauses: pausesOf(take) });
+  t += d + (u.gap ?? ep.gap ?? 0.2) * GAPS;
   process.stdout.write(`\rvoice ${i + 1}/${units.length}`);
 }
 console.log('');
