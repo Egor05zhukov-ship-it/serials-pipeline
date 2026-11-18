@@ -1,6 +1,6 @@
 // «Убежище»: props of the season that kit/v2.js does not have. Same look: flat shapes of V, people's hands in the
 // thick wobbling line. Every function returns an SVG string for the 1080x1920 stage.
-import { lerp } from '../../kit/index.js';
+import { clamp, lerp } from '../../kit/index.js';
 import { V, FLOOR, ease, sine, person } from '../../kit/v2.js';
 
 const n = (x) => Math.round(x * 100) / 100;
@@ -70,5 +70,43 @@ export const sleeper = ({ x = 540, y = FLOOR - 170, col = V.vika, seed = 1, t = 
 // lower bunk for the sleeper: two posts and a board
 export const bunk = ({ x = 540, floor: fy = FLOOR, w = 420 } = {}) =>
   `<rect x="${x - w / 2}" y="${fy - 170}" width="${w}" height="34" fill="${V.obj}"/><rect x="${x - w / 2 - 11}" y="${fy - 430}" width="22" height="460" rx="6" fill="${V.obj}"/><rect x="${x + w / 2 - 11}" y="${fy - 430}" width="22" height="460" rx="6" fill="${V.obj}"/>`;
+
+// ---------- episode 3 ----------
+// The old plan of the shelter on a sheet of paper: the hall, the store and, on the right, a room the plan hides.
+// stain 0..1 lays a blot of paint over that room; word 0..1 lets the two words under the paint show through.
+export const PLAN = { x: 130, y: 330, w: 820, h: 820 };
+export const planSheet = ({ stain = 1, word = 0 } = {}) => {
+  const { x, y, w, h } = PLAN;
+  const rooms = `<rect x="${x + 70}" y="${y + 170}" width="430" height="560" rx="10" fill="${V.mid}"/><rect x="${x + 70}" y="${y + 760}" width="190" height="40" rx="8" fill="${V.mid}"/>`
+    + `<rect x="${x + 530}" y="${y + 170}" width="220" height="250" rx="10" fill="${V.mid}"/><rect x="${x + 530}" y="${y + 450}" width="220" height="280" rx="10" fill="${V.mid}"/>`;
+  const blot = stain > 0 ? `<path d="M${x + 505} ${y + 440} C${x + 560} ${y + 410} ${x + 690} ${y + 418} ${x + 770} ${y + 445} C${x + 800} ${y + 540} ${x + 790} ${y + 660} ${x + 768} ${y + 752} C${x + 680} ${y + 770} ${x + 580} ${y + 768} ${x + 512} ${y + 748} C${x + 495} ${y + 650} ${x + 492} ${y + 540} ${x + 505} ${y + 440} Z" fill="${V.obj}" opacity="${n(ease(stain))}"/>` : '';
+  const txt = word > 0 ? `<text x="${x + 640}" y="${y + 612}" text-anchor="middle" font-family="Mont" font-weight="800" font-size="50" letter-spacing="2" fill="${V.floor}" opacity="${n(0.85 * ease(word))}">ОТСЕК Б</text>` : '';
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="20" fill="${V.soft}"/><rect x="${x + 70}" y="${y + 70}" width="${w - 140}" height="14" rx="7" fill="${V.mid}"/>${rooms}${blot}${txt}`;
+};
+
+// a sheet of paper lying on the floor, pushed out from under a door at doorX: out 0..1 how far it has come
+export const floorSheet = ({ doorX = 1000, out = 1, fy = FLOOR } = {}) => {
+  if (out <= 0) return '';
+  const tip = doorX - 30 - 150 * ease(out);
+  return `<path d="M${n(tip)} ${fy + 2} L${doorX + 40} ${fy + 2} L${doorX + 40} ${fy + 16} L${n(tip - 10)} ${fy + 16} Z" fill="${V.soft}"/>`;
+};
+
+// a sheet held up in front of a person at (x, y) = its bottom middle; lift 0..1 brings it up from the floor
+export const heldSheet = ({ x, y, lift = 1, seed = 0 }) =>
+  lift <= 0 ? '' : `<g transform="translate(${n(x)} ${n(lerp(FLOOR, y, ease(lift)))})" filter="url(#hd${seed % 4})"><rect x="-48" y="-120" width="96" height="120" rx="6" fill="${V.soft}" ${INK}/></g>`;
+
+// the note close up: printed rows (lines 0..1 how many are printed), then a pencil line below (pencil 0..1 written).
+// The words themselves are in the caption: the sheet shows only their shape.
+export const noteSheet = ({ x = 170, y = 380, w = 740, h = 760, lines = 1, pencil = 0 } = {}) => {
+  const rows = [[0, 560], [1, 470]].map(([i, len]) => {
+    const k = ease(clamp(lines * 2 - i));
+    return k <= 0 ? '' : `<rect x="${x + 90}" y="${y + 140 + i * 90}" width="${n(len * k)}" height="44" rx="6" fill="${V.floor}"/>`;
+  }).join('');
+  const k = ease(pencil);
+  let d = '';
+  for (let i = 0; i <= 40; i++) { const u = i / 40; d += `${i ? 'L' : 'M'}${n(x + 90 + u * 540)} ${n(y + 480 + 18 * Math.sin(u * 46) * (0.6 + 0.4 * Math.sin(u * 7)))} `; }
+  const pen = k > 0 ? `<g filter="url(#ink)"><path d="${d}" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="${(1 - k).toFixed(4)}" fill="none" stroke="${V.obj}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g>` : '';
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" fill="${V.soft}"/>${rows}${pen}`;
+};
 
 export { lerp, sine };
