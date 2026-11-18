@@ -122,6 +122,34 @@
       "zernioPostId": "6afb8debf5ce185c20026921",
       "publishedAt": "2026-11-18 18:08",
       "postUrl": "https://www.instagram.com/reel/Df4yongMPwZ/"
+    },
+    {
+      "id": "spisok-ep02",
+      "series": "spisok",
+      "account": "tretye.pravilo",
+      "number": 2,
+      "title": "ТРИ ЧАСА НОЧИ",
+      "status": "scheduled",
+      "out": "out/spisok-ep02",
+      "builtAt": "2026-11-18 20:01",
+      "builtOn": "github",
+      "seconds": 73,
+      "scheduledFor": "2026-11-19T18:07",
+      "zernioPostId": "6afdda029ab1f0999ab81492"
+    },
+    {
+      "id": "ubezhishche-ep03",
+      "series": "ubezhishche",
+      "account": "ty.by.vyzhil",
+      "number": 3,
+      "title": "ЗАПИСКА",
+      "status": "scheduled",
+      "out": "out/ubezhishche-ep03",
+      "builtAt": "2026-11-18 20:01",
+      "builtOn": "github",
+      "seconds": 60,
+      "scheduledFor": "2026-11-19T18:07",
+      "zernioPostId": "6afdda079ab1f0999ab814ac"
     }
   ],
   "schedulePlan": "Старт: каждый день, в будни 18:07, в выходные 13:07. Позже владелец хочет перейти на пн, ср, пт вечером и субботу в обед."
