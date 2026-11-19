@@ -1,27 +1,10 @@
 {
-  "_about": "Zernio: publishing reels and answering comments through the official Instagram API (client: publish/zernio.mjs). Key: ~/.config/serials/zernio.env, never in git. Zernio account: Google sign-in (account e-mail), free plan (first 2 accounts free).",
+  "_about": "Zernio: publishing reels and answering comments through the official Instagram API (client: publish/zernio.mjs). Key: ~/.config/serials/zernio.env, never in git. Accounts are entered under neutral keys with userHash (a one-way hash of the Instagram username): this repository is public and names neither the accounts nor their reels. accountId is filled in by publish/health.mjs when the owner connects the account.",
   "profileId": "6afb30fc9779b2ad3041c95e",
   "accounts": {
-    "tretye.pravilo": {
-      "accountId": "6afb318957e4c6093e1a85ce",
-      "connectedAt": "2026-11-16T16:38:33Z",
-      "scopes": [
-        "instagram_business_basic",
-        "instagram_business_content_publish",
-        "instagram_business_manage_insights",
-        "instagram_business_manage_comments"
-      ]
-    },
-    "ty.by.vyzhil": {
-      "accountId": "6afb3cd3d17e69adc36bbd4c",
-      "connectedAt": "2026-11-16T17:26:42Z",
-      "scopes": [
-        "instagram_business_basic",
-        "instagram_business_content_publish",
-        "instagram_business_manage_insights",
-        "instagram_business_manage_comments"
-      ]
+    "acc3": {
+      "accountId": null,
+      "userHash": "80967260c1d0cae7"
     }
-  },
-  "tested": "2026-11-16: on both accounts: upload with retry, scheduled reel with cover (12:00 Europe/Moscow -> 09:00Z), status, delete -> 404. GET /inbox/comments -> 200 without an add-on. Per-post comments list and reply body are still unverified (no comments yet). Tokens live 60 days (expires_in 5184000); Zernio refreshes them."
+  }
 }

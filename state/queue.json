@@ -23,6 +23,16 @@
       "publisher": "zernio",
       "altSlot": "12:37",
       "paused": "19.11.2026: владелец удалил аккаунт. Серии «Орбиты» лежат готовыми, новых не писать."
+    },
+    "acc3": {
+      "name": "Новый аккаунт (с 19.11.2026)",
+      "series": "koleso",
+      "slots": {
+        "weekday": "16:17",
+        "weekend": "16:17"
+      },
+      "publisher": "zernio",
+      "altSlot": "12:37"
     }
   },
   "episodes": [
@@ -159,11 +169,11 @@
     {
       "id": "koleso-ep01",
       "series": "koleso",
-      "account": "ty.by.vyzhil",
+      "account": "acc3",
       "number": 1,
       "title": "КОЛЕСО",
       "seriesName": "Колесо",
-      "status": "shelved",
+      "status": "ready",
       "out": "out/koleso-ep01",
       "builtAt": "2026-11-19 01:35",
       "builtOn": "mac",
@@ -181,7 +191,7 @@
         "uploadedAt": "2026-11-19T08:59:55.291Z"
       },
       "tries": 1,
-      "shelvedNote": "19.11: аккаунт @ty.by.vyzhil отключён Instagram. Пилот утверждён владельцем, файлы в out/koleso-ep01 и по ссылкам media (до 25.11). Вернуть: выбрать аккаунт, status ready."
+      "notBefore": "2026-11-20"
     },
     {
       "id": "orbita-ep01",
@@ -210,6 +220,6 @@
       "shelvedNote": "19.11: аккаунт @tretye.pravilo удалён владельцем. Пилот утверждён, файлы в out/orbita-ep01 и по ссылкам media (до 25.11). Вернуть: выбрать аккаунт, status ready."
     }
   ],
-  "schedulePlan": "С 19.11 оба аккаунта на паузе: @ty.by.vyzhil отключён Instagram, @tretye.pravilo удалён владельцем. Пилоты «Колесо» и «Орбита» утверждены и ждут новых аккаунтов.",
+  "schedulePlan": "С 19.11: старые аккаунты на паузе (один отключён Instagram, второй удалён владельцем). Новый аккаунт acc3 ведёт «Колесо» каждый день в 16:17, первая серия не раньше 20.11. «Орбита» ждёт второго аккаунта. Серия пишется после голосования зрителей под предыдущей, запаса на завтра нет.",
   "hold": []
 }

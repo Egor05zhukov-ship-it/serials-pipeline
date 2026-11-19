@@ -1,15 +1,4 @@
 {
- "changedAt": "2026-11-19 11:03",
- "accounts": {
-  "tretye.pravilo": {
-   "ok": false,
-   "code": "reconnect",
-   "since": "2026-11-19 11:03"
-  },
-  "ty.by.vyzhil": {
-   "ok": false,
-   "code": "check",
-   "since": "2026-11-19 11:03"
-  }
- }
+ "changedAt": "2026-11-19 13:19",
+ "accounts": {}
 }

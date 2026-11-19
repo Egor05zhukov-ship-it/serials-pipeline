@@ -8,7 +8,7 @@
 // The per-post list was checked on live comments 18.11.2026. The reply call (POST /inbox/comments/{postId}) is used
 // as documented; its first real answer is logged by `send`.
 import fs from 'node:fs';
-import { api } from './zernio.mjs';
+import { api, postRef } from './zernio.mjs';
 
 const DIR = 'state/comments', IN = `${DIR}/inbox.json`, OUT = `${DIR}/outbox.json`, DONE = `${DIR}/replied.json`, FIRST = `${DIR}/first.json`, VOTES = 'state/votes.json';
 const read = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return d; } };
@@ -21,7 +21,7 @@ const pick = (o, keys) => { for (const k of keys) if (o && o[k] != null) return 
 // An episode ends with two options (queue: episode.choice = { a, b }, taken from the episode file by ci/apply-result.mjs).
 // A comment is a vote when it is just the letter («А», «б!», «вариант 2») or names a word of one option and of no other.
 // state/votes.json holds numbers and our own labels only: the writer reads it, never the viewers' text.
-const shortcode = (u) => (/\/(?:reels?|p)\/([A-Za-z0-9_-]+)/.exec(String(u || '')) || [])[1] || null;
+const refOfEpisode = (e) => e.postRef || postRef(e.postUrl); // episodes published before 19.11.2026 keep a link
 const norm = (t) => String(t).toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
 const stems = (label) => norm(label).split(' ').filter((w) => w.length >= 4).map((w) => w.slice(0, Math.min(4, w.length - 1))); // «затаиться» -> «зата»: «затаюсь», «затаился»
 export function voteOf(text, choice) {
@@ -43,8 +43,8 @@ export function voteOf(text, choice) {
 function countVotes(posts, said = new Map()) {
   const q = read('state/queue.json', { episodes: [] }), votes = read(VOTES, {});
   for (const e of q.episodes) {
-    if (!e.choice || !e.postUrl) continue;
-    const p = posts.find((x) => x.permalink && shortcode(x.permalink) === shortcode(e.postUrl));
+    if (!e.choice || !refOfEpisode(e)) continue;
+    const p = posts.find((x) => x.ref && x.ref === refOfEpisode(e));
     if (!p) { votes[e.id] = votes[e.id] || { a: 0, b: 0, other: 0, labels: e.choice, updated: stamp() }; continue; } // no comments yet
     const v = { a: 0, b: 0, other: 0 }, old = votes[e.id];
     for (const text of said.get(p.postId) || (p.comments || []).map((c) => c.text)) v[voteOf(text, e.choice) || 'other']++;
@@ -102,7 +102,7 @@ const AUTO = [
 ];
 async function autoAnswer(post, done) {
   const q = read('state/queue.json', { episodes: [] });
-  const e = q.episodes.find((x) => x.choice && x.postUrl && post.permalink && shortcode(x.postUrl) === shortcode(post.permalink));
+  const e = q.episodes.find((x) => x.choice && post.ref && refOfEpisode(x) === post.ref);
   if (!e) return 0;
   let under = Object.values(done).filter((d) => d && d.auto && d.post === post.postId).length, sent = 0;
   for (const c of post.comments) {
@@ -139,7 +139,7 @@ async function fetchAll() {
       continue;
     }
     for (const p of list.data || []) {
-      const post = { account: nick, postId: p.id, permalink: p.permalink, caption: String(p.content || '').slice(0, 120), commentCount: p.commentCount, comments: [] };
+      const post = { account: nick, postId: p.id, ref: postRef(p.permalink), caption: String(p.content || '').slice(0, 120), commentCount: p.commentCount, comments: [] };
       try {
         const r = await api('GET', `/inbox/comments/${p.id}`, { query: { accountId: a.accountId, limit: 100 } });
         // shape checked 18.11.2026: {id, message, createdTime, from{username, isOwner}, replies[...same], canReply}

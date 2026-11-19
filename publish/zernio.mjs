@@ -18,12 +18,19 @@
 //
 // Every command prints JSON. A non-2xx answer prints {error, status, body} and exits with code 1.
 // Unverified until the first live call: the per-post comments list and the reply body (marked VERIFY below).
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const BASE = process.env.ZERNIO_BASE || 'https://zernio.com/api/v1';
+
+// This repository is public, so it keeps neither Instagram usernames nor links to reels, only one-way references:
+// enough to tell «the same reel» and «the same account», useless for finding them.
+const sha = (t) => crypto.createHash('sha256').update(String(t)).digest('hex').slice(0, 16);
+export const postRef = (url) => { const m = /\/(?:reels?|p)\/([A-Za-z0-9_-]+)/.exec(String(url || '')); return m ? sha(m[1]) : null; };
+export const userHash = (username) => sha(String(username || '').toLowerCase());
 
 function apiKey() {
   if (process.env.ZERNIO_API_KEY) return process.env.ZERNIO_API_KEY.trim();

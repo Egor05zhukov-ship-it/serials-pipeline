@@ -5,7 +5,7 @@
 // it and fails the scheduled run on purpose, so that GitHub mails the owner. Only he can clear such a lock.
 //   node publish/health.mjs
 import fs from 'node:fs';
-import { api } from './zernio.mjs';
+import { api, userHash } from './zernio.mjs';
 
 const FILE = 'state/health.json';
 const read = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return d; } };
@@ -19,14 +19,15 @@ const verdict = (h) => {
   if (h.status === 'error') return { ok: false, code: 'error' };
   return { ok: true };
 };
-// After the owner reconnects an account, Zernio may give it a new id: the one that is alive under the same username
-// is taken, so that publishing resumes by itself.
+// After the owner connects or reconnects an account, Zernio gives it an id: the live one under the same username is
+// taken, so that publishing starts by itself. An account entered with a neutral key carries userHash instead of the
+// username (state/zernio.json is public).
 try {
   const live = (await api('GET', '/accounts')).accounts || [];
   let moved = false;
   for (const [nick, a] of Object.entries(z.accounts)) {
-    const best = live.filter((x) => x.platform === 'instagram' && x.username === nick).sort((x, y) => Number(y.isActive) - Number(x.isActive) || String(y.updatedAt).localeCompare(String(x.updatedAt)))[0];
-    if (best && best._id && best._id !== a.accountId) { console.log(`health: ${nick} has a new account id`); a.accountId = best._id; moved = true; }
+    const best = live.filter((x) => x.platform === 'instagram' && (a.userHash ? userHash(x.username) === a.userHash : x.username === nick)).sort((x, y) => Number(y.isActive) - Number(x.isActive) || String(y.updatedAt).localeCompare(String(x.updatedAt)))[0];
+    if (best && best._id && best._id !== a.accountId && (best.isActive || !a.accountId)) { console.log(`health: ${nick} has a new account id`); a.accountId = best._id; a.connectedAt = new Date().toISOString().slice(0, 19) + 'Z'; moved = true; }
   }
   if (moved) fs.writeFileSync('state/zernio.json', JSON.stringify(z, null, 2) + '\n');
 } catch (e) { console.log(`health: account list: ${e.message}`); }

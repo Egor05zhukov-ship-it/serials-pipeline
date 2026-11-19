@@ -17,7 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { api, postReel, upload } from './zernio.mjs';
+import { api, postReel, postRef, upload } from './zernio.mjs';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const QUEUE = path.join(ROOT, 'state/queue.json'), ZERNIO = path.join(ROOT, 'state/zernio.json'), LOG = path.join(ROOT, 'state/log.jsonl'), HEALTH = path.join(ROOT, 'state/health.json');
@@ -45,6 +45,7 @@ function nextSlot(q, e, now = new Date()) {
   const used = q.episodes.filter((x) => x.account === e.account && lineOf(x) === lineOf(e) && ['scheduled', 'published'].includes(x.status)).map(dayOf).filter(Boolean).sort();
   let d = day(now);
   if (used.length && used.at(-1) >= d) d = addDays(used.at(-1), 1);
+  if (e.notBefore && d < e.notBefore) d = e.notBefore; // a first episode held back for a day (a fresh account)
   if (d === day(now)) {
     const [h, m] = timeOf(acc, e, d).split(':').map(Number), t = msk(now), left = h * 60 + m - (t.getUTCHours() * 60 + t.getUTCMinutes());
     if (left < MARGIN_MIN) d = addDays(d, 1);
@@ -148,9 +149,10 @@ async function sync() {
     }
     const pl = (post.platforms || [])[0] || {};
     if (post.status === 'published') {
-      Object.assign(e, { status: 'published', publishedAt: stamp(new Date(pl.publishedAt || post.publishedAt || Date.now())), postUrl: pl.platformPostUrl || null });
+      // the link to the reel is not kept (public repository): only a reference, by which its comments are matched
+      Object.assign(e, { status: 'published', publishedAt: stamp(new Date(pl.publishedAt || post.publishedAt || Date.now())), postRef: postRef(pl.platformPostUrl) });
       delete e.media; delete e.retryAfter;
-      log({ event: 'published', episode: e.id, account: e.account, url: e.postUrl });
+      log({ event: 'published', episode: e.id, account: e.account });
     } else if (['failed', 'partial', 'cancelled'].includes(post.status)) {
       const why = String(pl.errorMessage || pl.error || post.status).slice(0, 300);
       if (e.trial && /trial/i.test(why)) { // the account may not post Trial Reels: the next run sends it as an ordinary reel
@@ -166,7 +168,7 @@ async function sync() {
         log({ event: 'publish-failed', episode: e.id, account: e.account, why });
       }
     }
-    out.push({ id: e.id, zernio: post.status, status: e.status, url: e.postUrl });
+    out.push({ id: e.id, zernio: post.status, status: e.status });
   }
   save(q);
   return out;
