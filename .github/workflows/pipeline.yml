@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       task:
-        description: "build (episodes of main), selftest, sync or probe"
+        description: "build (episodes of main), selftest, sync, comments or probe"
         default: "sync"
       arg:
         description: "build: episode files, space-separated (empty = every episode with status written)"
@@ -11,11 +11,13 @@ on:
   push:
     branches: ["claude/**"]
   schedule:
-    - cron: "41 6,15 * * *"
+    - cron: "41 6,15 * * *"         # the full sync: 09:41 and 18:41 Moscow time
+    - cron: "7-59/10 13-21 * * *"   # the quick comments round: every 10 minutes, 16:07-00:57 Moscow time
+    - cron: "11 5,7,9,11 * * *"     # and four times before the first reel of the day: 08:11 10:11 12:11 14:11
 concurrency:
   group: pipeline-${{ github.event_name == 'schedule' && 'sync' || 'main' }}
 env:
-  TASK: ${{ github.event_name == 'schedule' && 'sync' || github.event_name == 'push' && 'branch' || inputs.task }}
+  TASK: ${{ github.event_name == 'schedule' && (github.event.schedule == '41 6,15 * * *' && 'sync' || 'comments') || github.event_name == 'push' && 'branch' || inputs.task }}
   ARG: ${{ inputs.arg }}
   BRANCH: ${{ github.event_name == 'push' && github.ref_name || '' }}
 jobs:
