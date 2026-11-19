@@ -10,7 +10,7 @@ on:
         default: ""
   push:
     branches: ["claude/**"]
-  schedule:
+  schedule: # times are UTC; GitHub starts scheduled runs late and sometimes drops them
     - cron: "41 6,15 * * *"         # the full sync: 09:41 and 18:41 Moscow time
     - cron: "7-59/10 13-21 * * *"   # the quick comments round: every 10 minutes, 16:07-00:57 Moscow time
     - cron: "11 5,7,9,11 * * *"     # and four times before the first reel of the day: 08:11 10:11 12:11 14:11

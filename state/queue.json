@@ -173,7 +173,7 @@
       "number": 1,
       "title": "КОЛЕСО",
       "seriesName": "Колесо",
-      "status": "scheduled",
+      "status": "published",
       "out": "out/koleso-ep01",
       "builtAt": "2026-11-19 01:35",
       "builtOn": "mac",
@@ -183,17 +183,12 @@
         "a": "Выйти на крышу",
         "b": "Ждать ночи"
       },
-      "media": {
-        "video": "https://media.zernio.com/temp/1795078651647_f3cdbce452e0afe1_video.mp4",
-        "cover": "https://media.zernio.com/temp/1795078755533_54daec667732c141_cover.jpg",
-        "story": "https://media.zernio.com/temp/1795078760078_6256671de66d5717_video.mp4",
-        "caption": "Ты застрял на колесе обозрения во время зомби-апокалипсиса, и каждую ночь оно опускает вашу кабину ближе к земле.\n\n«Колесо», серия 1.\n\nКак ты поступишь: А — выйти на крышу, Б — ждать ночи? Напиши в комментариях.\nПерешли тому, с кем оказался бы в этой кабине.\n\n#колесо #зомбиапокалипсис #минисериал #анимация #тайна",
-        "uploadedAt": "2026-11-19T08:59:55.291Z"
-      },
       "tries": 2,
       "scheduledFor": "2026-11-19T16:17",
       "zernioPostId": "6afed2c9f128b24d0859042b",
-      "storyPostId": "6afed2cc3c8b4b5bb474c270"
+      "storyPostId": "6afed2cc3c8b4b5bb474c270",
+      "publishedAt": "2026-11-19 16:18",
+      "postRef": "484ab1eb31aee1bf"
     },
     {
       "id": "orbita-ep01",
