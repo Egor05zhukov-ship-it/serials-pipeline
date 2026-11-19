@@ -19,6 +19,18 @@ const verdict = (h) => {
   if (h.status === 'error') return { ok: false, code: 'error' };
   return { ok: true };
 };
+// After the owner reconnects an account, Zernio may give it a new id: the one that is alive under the same username
+// is taken, so that publishing resumes by itself.
+try {
+  const live = (await api('GET', '/accounts')).accounts || [];
+  let moved = false;
+  for (const [nick, a] of Object.entries(z.accounts)) {
+    const best = live.filter((x) => x.platform === 'instagram' && x.username === nick).sort((x, y) => Number(y.isActive) - Number(x.isActive) || String(y.updatedAt).localeCompare(String(x.updatedAt)))[0];
+    if (best && best._id && best._id !== a.accountId) { console.log(`health: ${nick} has a new account id`); a.accountId = best._id; moved = true; }
+  }
+  if (moved) fs.writeFileSync('state/zernio.json', JSON.stringify(z, null, 2) + '\n');
+} catch (e) { console.log(`health: account list: ${e.message}`); }
+
 const accounts = {};
 for (const [nick, a] of Object.entries(z.accounts)) {
   if (!a.accountId) continue;

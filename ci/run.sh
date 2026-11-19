@@ -123,6 +123,9 @@ if [ "$TASK" = selftest ]; then
 fi
 
 if [ "$TASK" = comments ] || { [ "$TASK" = branch ] && [[ "${BRANCH:-}" =~ ^claude/sync[A-Za-z0-9._/-]*$ ]]; }; then
+  # an account the owner has just unlocked gets its waiting episode back on the plan here, from the links kept in the queue
+  node publish/health.mjs | tee -a "$REPORT" || say "health: failed"
+  node publish/schedule.mjs run | tee -a "$REPORT" || say "schedule: failed, see above"
   node publish/schedule.mjs sync | tee -a "$REPORT" || say "sync: failed, see above"
   node publish/comments.mjs fetch | tee -a "$REPORT" || say "comments fetch: failed"
   node publish/comments.mjs send | tee -a "$REPORT" || say "comments send: failed"
@@ -138,9 +141,9 @@ if [ "$TASK" = branch ]; then
   else say "branch refused: $WHY"; node -e 'require("fs").appendFileSync("state/log.jsonl",JSON.stringify({at:new Date(Date.now()+3*3600e3).toISOString().slice(0,16).replace("T"," "),event:"branch-refused",branch:process.argv[1],why:process.argv[2]})+"\n")' "$BRANCH" "$WHY"; echo '[]' > ci-result.json; fi
 fi
 node ci/apply-result.mjs | tee -a "$REPORT"
+node publish/health.mjs | tee -a "$REPORT" || say "health: failed (does not stop publishing)"
 node publish/schedule.mjs run | tee -a "$REPORT" || say "schedule: failed, see above"
 node publish/schedule.mjs sync | tee -a "$REPORT" || say "sync: failed, see above"
-node publish/health.mjs | tee -a "$REPORT" || say "health: failed (does not stop publishing)"
 node publish/stats.mjs | tee -a "$REPORT" || say "stats: failed (does not stop publishing)"
 node publish/comments.mjs fetch | tee -a "$REPORT" || say "comments fetch: failed (does not stop publishing)"
 node publish/comments.mjs send | tee -a "$REPORT" || say "comments send: failed (does not stop publishing)"

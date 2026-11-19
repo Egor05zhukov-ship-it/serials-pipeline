@@ -5,6 +5,10 @@
 //   node publish/schedule.mjs run [--only <id>]    schedule every `ready` episode whose out/<id>/video.mp4 exists
 //   node publish/schedule.mjs sync                 scheduled -> published / failed (asks Zernio)
 //   node publish/schedule.mjs unschedule <id>      take a scheduled episode off the air plan (back to `ready`)
+//   node publish/schedule.mjs stage                upload the files of built episodes and keep the links in the queue
+// The files of a built episode live only where it was built (the build run's machine, or the Mac). So at the first try
+// they are uploaded to Zernio and the links are kept in the queue (episode.media, good for a week): if Instagram locks
+// the account and the reel does not go out, any later run can put it on the plan again without the files.
 // Main line: one episode per account per day, in episode order, at accounts.<nick>.slots {weekday, weekend} (Moscow
 // time) or at the episode's own `slot` (a time test of the writer; the value is checked in ci/apply-result.mjs).
 // Remakes (epNNr.js: a first episode that flopped, cut anew): one per account per day at their own time (slot,
@@ -16,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { api, postReel, upload } from './zernio.mjs';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const QUEUE = path.join(ROOT, 'state/queue.json'), ZERNIO = path.join(ROOT, 'state/zernio.json'), LOG = path.join(ROOT, 'state/log.jsonl');
+const QUEUE = path.join(ROOT, 'state/queue.json'), ZERNIO = path.join(ROOT, 'state/zernio.json'), LOG = path.join(ROOT, 'state/log.jsonl'), HEALTH = path.join(ROOT, 'state/health.json');
 const MSK = 3 * 3600e3, MARGIN_MIN = 20;
 const read = (f) => JSON.parse(fs.readFileSync(f, 'utf8'));
 const save = (q) => fs.writeFileSync(QUEUE, JSON.stringify(q, null, 2) + '\n');
@@ -58,43 +62,76 @@ function due(q, only) {
   });
 }
 
+// Uploads the episode's files once and remembers the links (Zernio keeps an upload for 7 days; a post made from it
+// keeps its own copy). False when there are neither files here nor fresh links.
+const MEDIA_DAYS = 6;
+const freshMedia = (e) => Boolean(e.media?.video && e.media.caption && Date.now() - Date.parse(e.media.uploadedAt) < MEDIA_DAYS * 864e5);
+async function stage(q, e) {
+  if (freshMedia(e)) return true;
+  const dir = path.join(ROOT, e.out || `out/${e.id}`), video = path.join(dir, 'video.mp4'), cover = path.join(dir, 'cover.jpg'), cap = path.join(dir, 'caption.txt');
+  const story = path.join(ROOT, 'out', `${e.id}-story`, 'video.mp4'); // the story teaser of the episode (tools/story.mjs)
+  if (!fs.existsSync(video) || !fs.existsSync(cap)) return false;
+  const v = await upload(video), c = fs.existsSync(cover) ? await upload(cover) : null, st = fs.existsSync(story) ? await upload(story).catch(() => null) : null;
+  e.media = { video: v.publicUrl, ...(c ? { cover: c.publicUrl } : {}), ...(st ? { story: st.publicUrl } : {}), caption: fs.readFileSync(cap, 'utf8').trim(), uploadedAt: new Date().toISOString() };
+  save(q);
+  return true;
+}
+
 async function run(only, dry) {
   const q = read(QUEUE), z = read(ZERNIO), out = [];
+  let health = {};
+  try { health = read(HEALTH).accounts || {}; } catch { /* no check yet */ }
   for (const e of due(q, only)) {
-    const dir = path.join(ROOT, e.out || `out/${e.id}`), accountId = z.accounts[e.account]?.accountId, at = nextSlot(q, e);
-    const video = path.join(dir, 'video.mp4'), cover = path.join(dir, 'cover.jpg'), cap = path.join(dir, 'caption.txt');
+    const accountId = z.accounts[e.account]?.accountId, at = nextSlot(q, e);
     if (!accountId) { out.push({ id: e.id, skipped: `account ${e.account} is not connected to Zernio` }); continue; }
-    if (!fs.existsSync(video) || !fs.existsSync(cap)) { out.push({ id: e.id, skipped: `no ${path.relative(ROOT, video)} here: build it first` }); continue; }
     if (dry) { out.push({ id: e.id, account: e.account, at }); Object.assign(e, { status: 'scheduled', scheduledFor: at }); continue; }
+    // an account Instagram has locked (publish/health.mjs) is not tried: the episode waits as `ready` for the owner
+    if (health[e.account]?.ok === false) { out.push({ id: e.id, skipped: `account ${e.account} is locked by Instagram (${health[e.account].code})` }); continue; }
+    if (e.retryAfter && Date.now() < Date.parse(e.retryAfter)) { out.push({ id: e.id, skipped: `waits until ${e.retryAfter} after a failed try` }); continue; }
+    try {
+      if (!(await stage(q, e))) { out.push({ id: e.id, skipped: `no out/${e.id}/video.mp4 here and no uploaded copy: build it first` }); continue; }
+    } catch (err) { out.push({ id: e.id, error: `upload: ${err.message}` }); continue; }
     const trial = Boolean(e.remake) && q.accounts[e.account].trial !== false;
     // The account's own first comment («Голосуй здесь…») is posted by publish/comments.mjs once the reel is out:
     // Zernio's firstComment field is documented for feed posts and carousels only, so it is not sent with a Reel.
-    const idem = `${e.id}:${at}:${fs.statSync(video).size}:${Math.round(fs.statSync(video).mtimeMs / 1000)}`; // a rebuilt video is a new post, not a replay of the old request
+    // the same episode at the same time from two machines is one post; after it was taken off the plan (e.tries) it is a new one
+    const idem = `${e.id}:${at}:${e.media.uploadedAt}:${e.tries || 0}`;
     const sound = e.seriesName || e.title; // the reel's sound is named after the series instead of «Оригинальная аудиодорожка»
     let r;
     try {
-      r = await postReel({ accountId, video, cover: fs.existsSync(cover) ? cover : null, caption: fs.readFileSync(cap, 'utf8').trim(), at, idem,
+      r = await postReel({ accountId, videoUrl: e.media.video, coverUrl: e.media.cover || null, caption: e.media.caption, at, idem,
         extra: { ...(trial ? { trialParams: { graduationStrategy: 'SS_PERFORMANCE' } } : {}), ...(sound ? { audioName: `${sound} · серия ${e.number}`.slice(0, 60) } : {}) } });
-    } catch (err) { // an account Instagram has locked (security check, sessions reset) must not stop the other account's episode
+    } catch (err) { // one account's trouble must not stop the other account's episode; the next try is in an hour
       const why = `${err.message} ${JSON.stringify(err.body || '').slice(0, 300)}`;
+      e.retryAfter = new Date(Date.now() + 3600e3).toISOString();
+      save(q);
       log({ event: BLOCKED.test(why) ? 'account-blocked' : 'schedule-failed', episode: e.id, account: e.account, why });
       out.push({ id: e.id, account: e.account, error: why.slice(0, 200) });
       continue;
     }
+    delete e.retryAfter;
     Object.assign(e, { status: 'scheduled', scheduledFor: at, zernioPostId: r.post._id, ...(trial ? { trial: true } : {}) });
-    // the story teaser of the episode (tools/story.mjs) goes out four minutes after the reel; the owner or a Mac session
-    // then files it under the series' highlight (the API can neither do that nor put a link on a story)
-    const story = path.join(ROOT, 'out', `${e.id}-story`, 'video.mp4');
-    if (!trial && q.stories !== false && fs.existsSync(story)) {
+    // the story teaser goes out four minutes after the reel (the API can neither file it under a highlight nor put a link on it)
+    if (!trial && q.stories !== false && e.media.story) {
       try {
-        const sv = await upload(story), sAt = plusMin(at, 4);
-        const sr = await api('POST', '/posts', { body: { content: '', mediaItems: [{ type: 'video', url: sv.publicUrl }], platforms: [{ platform: 'instagram', accountId, platformSpecificData: { contentType: 'story' } }], scheduledFor: sAt, timezone: 'Europe/Moscow' }, idem: `story:${e.id}:${sAt}` });
+        const sAt = plusMin(at, 4);
+        const sr = await api('POST', '/posts', { body: { content: '', mediaItems: [{ type: 'video', url: e.media.story }], platforms: [{ platform: 'instagram', accountId, platformSpecificData: { contentType: 'story' } }], scheduledFor: sAt, timezone: 'Europe/Moscow' }, idem: `story:${e.id}:${sAt}:${e.tries || 0}` });
         e.storyPostId = sr.post._id;
       } catch (err) { log({ event: 'story-failed', episode: e.id, why: err.message }); }
     }
     save(q);
     log({ event: 'scheduled', episode: e.id, account: e.account, for: at, post: r.post._id, ...(trial ? { trial: true } : {}) });
     out.push({ id: e.id, account: e.account, at, post: r.post._id, ...(trial ? { trial: true } : {}) });
+  }
+  return out;
+}
+
+// uploads the files of every built episode that is still waiting or on the plan, so that another machine can (re)schedule it
+async function stageAll() {
+  const q = read(QUEUE), out = [];
+  for (const e of q.episodes.filter((x) => ['ready', 'scheduled'].includes(x.status))) {
+    const had = freshMedia(e);
+    try { out.push({ id: e.id, media: had ? 'already uploaded' : (await stage(q, e)) ? 'uploaded' : 'no files here' }); } catch (err) { out.push({ id: e.id, error: err.message }); }
   }
   return out;
 }
@@ -112,6 +149,7 @@ async function sync() {
     const pl = (post.platforms || [])[0] || {};
     if (post.status === 'published') {
       Object.assign(e, { status: 'published', publishedAt: stamp(new Date(pl.publishedAt || post.publishedAt || Date.now())), postUrl: pl.platformPostUrl || null });
+      delete e.media; delete e.retryAfter;
       log({ event: 'published', episode: e.id, account: e.account, url: e.postUrl });
     } else if (['failed', 'partial', 'cancelled'].includes(post.status)) {
       const why = String(pl.errorMessage || pl.error || post.status).slice(0, 300);
@@ -121,7 +159,7 @@ async function sync() {
         log({ event: 'trial-refused', episode: e.id, account: e.account, why });
       } else if (BLOCKED.test(why)) { // the account is locked by Instagram: back to `ready`, the reel itself is fine
         if (e.storyPostId) await api('DELETE', `/posts/${e.storyPostId}`).catch(() => {});
-        delete e.scheduledFor; delete e.zernioPostId; delete e.storyPostId; e.status = 'ready';
+        delete e.scheduledFor; delete e.zernioPostId; delete e.storyPostId; e.status = 'ready'; e.tries = (e.tries || 0) + 1;
         log({ event: 'account-blocked', episode: e.id, account: e.account, why });
       } else {
         Object.assign(e, { status: 'failed', failNote: `publication: ${why}` });
@@ -140,13 +178,13 @@ async function unschedule(id) {
   await api('DELETE', `/posts/${e.zernioPostId}`);
   if (e.storyPostId) await api('DELETE', `/posts/${e.storyPostId}`).catch(() => {});
   log({ event: 'unscheduled', episode: id, was: e.scheduledFor });
-  delete e.scheduledFor; delete e.zernioPostId; delete e.storyPostId; delete e.trial; e.status = 'ready';
+  delete e.scheduledFor; delete e.zernioPostId; delete e.storyPostId; delete e.trial; e.status = 'ready'; e.tries = (e.tries || 0) + 1;
   save(q);
   return { id, status: 'ready' };
 }
 
 const [cmd, ...rest] = process.argv.slice(2);
 const only = rest.includes('--only') ? rest[rest.indexOf('--only') + 1] : null;
-const job = { plan: () => run(only, true), run: () => run(only, false), sync, unschedule: () => unschedule(rest[0]) }[cmd];
-if (!job) { console.error('commands: plan | run [--only <id>] | sync | unschedule <id>'); process.exit(1); }
+const job = { plan: () => run(only, true), run: () => run(only, false), sync, unschedule: () => unschedule(rest[0]), stage: stageAll }[cmd];
+if (!job) { console.error('commands: plan | run [--only <id>] | sync | unschedule <id> | stage'); process.exit(1); }
 job().then((r) => console.log(JSON.stringify(r, null, 1))).catch((e) => { console.log(JSON.stringify({ error: e.message, status: e.status, body: e.body }, null, 1)); process.exit(1); });
