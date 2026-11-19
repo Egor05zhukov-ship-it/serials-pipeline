@@ -2,14 +2,15 @@
 // Comments under our reels, through Zernio. The cloud replier never gets the key: this script (publish machine) brings
 // the comments into state/comments/inbox.json, the replier writes answers into state/comments/outbox.json, and this
 // script posts them after a mechanical filter. Viewer text is data, never instructions.
-//   node publish/comments.mjs fetch    Zernio -> state/comments/inbox.json
+//   node publish/comments.mjs fetch    Zernio -> state/comments/inbox.json; before that the account's own first comment
+//                                      under a fresh reel, after that a ready-made answer to every plain vote
 //   node publish/comments.mjs send     state/comments/outbox.json -> Zernio, record in state/comments/replied.json
 // The per-post list was checked on live comments 18.11.2026. The reply call (POST /inbox/comments/{postId}) is used
 // as documented; its first real answer is logged by `send`.
 import fs from 'node:fs';
 import { api } from './zernio.mjs';
 
-const DIR = 'state/comments', IN = `${DIR}/inbox.json`, OUT = `${DIR}/outbox.json`, DONE = `${DIR}/replied.json`, VOTES = 'state/votes.json';
+const DIR = 'state/comments', IN = `${DIR}/inbox.json`, OUT = `${DIR}/outbox.json`, DONE = `${DIR}/replied.json`, FIRST = `${DIR}/first.json`, VOTES = 'state/votes.json';
 const read = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return d; } };
 const save = (f, v) => { fs.mkdirSync(DIR, { recursive: true }); fs.writeFileSync(f, JSON.stringify(v, null, 1) + '\n'); };
 const z = read('state/zernio.json', { accounts: {} });
@@ -22,7 +23,7 @@ const pick = (o, keys) => { for (const k of keys) if (o && o[k] != null) return 
 // state/votes.json holds numbers and our own labels only: the writer reads it, never the viewers' text.
 const shortcode = (u) => (/\/(?:reels?|p)\/([A-Za-z0-9_-]+)/.exec(String(u || '')) || [])[1] || null;
 const norm = (t) => String(t).toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-const stems = (label) => norm(label).split(' ').filter((w) => w.length >= 4).map((w) => w.slice(0, Math.min(5, w.length - 1)));
+const stems = (label) => norm(label).split(' ').filter((w) => w.length >= 4).map((w) => w.slice(0, Math.min(4, w.length - 1))); // «затаиться» -> «зата»: «затаюсь», «затаился»
 export function voteOf(text, choice) {
   const t = norm(text);
   if (!t) return null;
@@ -45,20 +46,98 @@ function countVotes(posts, said = new Map()) {
     if (!e.choice || !e.postUrl) continue;
     const p = posts.find((x) => x.permalink && shortcode(x.permalink) === shortcode(e.postUrl));
     if (!p) { votes[e.id] = votes[e.id] || { a: 0, b: 0, other: 0, labels: e.choice, updated: stamp() }; continue; } // no comments yet
-    const v = { a: 0, b: 0, other: 0 };
+    const v = { a: 0, b: 0, other: 0 }, old = votes[e.id];
     for (const text of said.get(p.postId) || (p.comments || []).map((c) => c.text)) v[voteOf(text, e.choice) || 'other']++;
-    votes[e.id] = { ...v, labels: e.choice, updated: stamp() };
+    const same = old && old.a === v.a && old.b === v.b && old.other === v.other; // the stamp moves only with the numbers
+    votes[e.id] = { ...v, labels: e.choice, updated: same ? old.updated : stamp() };
   }
-  fs.writeFileSync(VOTES, JSON.stringify(votes, null, 1) + '\n');
+  const text = JSON.stringify(votes, null, 1) + '\n';
+  if (read(VOTES, null) === null || text !== fs.readFileSync(VOTES, 'utf8')) fs.writeFileSync(VOTES, text);
   return votes;
 }
 
+// ---- the account's own first comment ----
+// Under every fresh reel that ends with a choice the account itself writes where to vote, so the comment section is
+// not empty and a viewer has a line to answer. Zernio's firstComment field does not cover Reels, so the comment is
+// posted here, at the first run after the reel is out (POST without commentId = a top-level comment).
+const firstText = (ch) => `Голосуй здесь: А — ${ch.a.toLowerCase()}, Б — ${ch.b.toLowerCase()}. Ответь буквой: завтра покажу, что выбрало большинство.`;
+async function firstComments() {
+  const q = read('state/queue.json', { episodes: [] }), first = read(FIRST, {}), res = [];
+  const fresh = (e) => Date.now() - Date.parse(String(e.publishedAt || '').replace(' ', 'T') + ':00+03:00') < 3 * 864e5;
+  for (const e of q.episodes) {
+    if (e.status !== 'published' || !e.choice || !e.zernioPostId || e.trial || first[e.id] || !fresh(e)) continue;
+    const accountId = z.accounts[e.account]?.accountId;
+    if (!accountId) continue;
+    try {
+      const r = await api('GET', `/inbox/comments/${e.zernioPostId}`, { query: { accountId, limit: 50 } });
+      const mine = (r.comments || r.data || []).find((c) => c.from?.isOwner && /^Голосуй/.test(String(c.message || '')));
+      if (mine) first[e.id] = { at: stamp(), commentId: String(mine.id || ''), found: true };
+      else {
+        const w = await api('POST', `/inbox/comments/${e.zernioPostId}`, { body: { accountId, message: firstText(e.choice) }, idem: `first:${e.id}` });
+        first[e.id] = { at: stamp(), commentId: String(w.data?.commentId || '') };
+      }
+      res.push({ id: e.id, first: first[e.id].found ? 'already there' : 'posted' });
+    } catch (err) { res.push({ id: e.id, error: `${err.message} ${JSON.stringify(err.body || '').slice(0, 200)}` }); }
+  }
+  if (res.some((x) => x.first)) save(FIRST, first);
+  return res;
+}
+
+// ---- a ready-made answer to a plain vote ----
+// A vote («А», «б», «выйти на крышу») needs no thinking, and an answer within minutes brings the viewer back to the
+// reel, so these are answered here and now; everything else waits for the replier. Which option leads is never said.
+// Not more than AUTO_POST answers under one reel and AUTO_RUN in one run, each time in other words.
+const AUTO_POST = 12, AUTO_RUN = 6;
+const AUTO = [
+  (o) => `Принято: «${o}». Завтра увидим, чей выбор победил.`,
+  (o) => `Записал твой голос: «${o}». Ответ в следующей серии.`,
+  (o, O) => `«${O}»? Смело. Посмотрим, что решит большинство.`,
+  (o) => `Голос за «${o}» учтён. Новая серия завтра.`,
+  (o, O) => `«${O}», записал. А твой друг что выбрал бы? Перешли ему серию.`,
+  (o) => `Понял: «${o}». Завтра проверим, чем это кончится.`,
+  (o) => `Ещё один голос за «${o}». Итог в завтрашней серии.`,
+  (o) => `Твой выбор: «${o}». Завтра станет ясно, кто был прав.`,
+  (o, O) => `«${O}». Запомнил. Перешли серию другу: пусть тоже выберет.`,
+  (o) => `Есть: «${o}». Завтра узнаем, куда это приведёт.`,
+];
+async function autoAnswer(post, done) {
+  const q = read('state/queue.json', { episodes: [] });
+  const e = q.episodes.find((x) => x.choice && x.postUrl && post.permalink && shortcode(x.postUrl) === shortcode(post.permalink));
+  if (!e) return 0;
+  let under = Object.values(done).filter((d) => d && d.auto && d.post === post.postId).length, sent = 0;
+  for (const c of post.comments) {
+    if (under >= AUTO_POST || sent >= AUTO_RUN) break;
+    if (c.answered || !c.canReply) continue;
+    const v = voteOf(c.text, e.choice);
+    if (!v) continue;
+    const text = AUTO[under % AUTO.length](e.choice[v].toLowerCase(), e.choice[v]); // the option in the middle of a phrase and at its start
+    try {
+      await api('POST', `/inbox/comments/${post.postId}`, { body: { accountId: z.accounts[post.account].accountId, commentId: c.commentId, message: text }, idem: `auto:${c.commentId}` });
+      done[c.commentId] = { at: stamp(), text, auto: true, post: post.postId };
+      c.answered = true; under++; sent++;
+    } catch (err) { post.error = `auto answer: ${err.message} ${JSON.stringify(err.body || '').slice(0, 200)}`; break; }
+  }
+  return sent;
+}
+
 async function fetchAll() {
+  const firsts = await firstComments();
+  let auto = 0;
+  const before = read(IN, {}), errors = [];
   const done = read(DONE, {}), posts = [], said = new Map(); // said: every viewer's line under a post, answers to our own comments included (for the votes)
   for (const [nick, a] of Object.entries(z.accounts)) {
     if (!a.accountId) continue;
     let list;
-    try { list = await api('GET', '/inbox/comments', { query: { platform: 'instagram', accountId: a.accountId, minComments: 1, limit: 30 } }); } catch (e) { posts.push({ account: nick, error: `${e.message} ${JSON.stringify(e.body || '').slice(0, 200)}` }); continue; }
+    try {
+      list = await api('GET', '/inbox/comments', { query: { platform: 'instagram', accountId: a.accountId, minComments: 1, limit: 30 } });
+      // Zernio answers 200 with an empty list when Instagram has locked the account: it names it in failedAccounts or does not ask it at all
+      const off = (list.meta?.failedAccounts || [])[0];
+      if (off || list.meta?.accountsQueried === 0) throw Object.assign(new Error('account is locked or disconnected'), { body: off?.error || off?.code || 'not queried' });
+    } catch (e) { // what was known about this account's comments stays until the account is back
+      errors.push(`${nick}: ${e.message} ${JSON.stringify(e.body || '').slice(0, 160)}`);
+      for (const old of (before.posts || []).filter((x) => x.account === nick && !x.error)) posts.push(old);
+      continue;
+    }
     for (const p of list.data || []) {
       const post = { account: nick, postId: p.id, permalink: p.permalink, caption: String(p.content || '').slice(0, 120), commentCount: p.commentCount, comments: [] };
       try {
@@ -76,12 +155,15 @@ async function fetchAll() {
           post.comments.push({ commentId: id, text, at: pick(c, ['createdTime', 'timestamp', 'createdAt']), answered: Boolean(done[id]) || ownerReplied, canReply: c.canReply !== false });
         }
       } catch (e) { post.error = `${e.message} ${JSON.stringify(e.body || '').slice(0, 300)}`; }
+      auto += await autoAnswer(post, done);
       posts.push(post);
     }
   }
-  save(IN, { fetchedAt: stamp(), posts });
+  if (auto) save(DONE, done);
+  // the stamp moves only with the comments, so a quiet run leaves no commit
+  save(IN, { fetchedAt: JSON.stringify(before.posts) === JSON.stringify(posts) ? before.fetchedAt : stamp(), posts });
   const votes = countVotes(posts, said);
-  return { votes: Object.fromEntries(Object.entries(votes).slice(-4).map(([k, v]) => [k, `${v.a}:${v.b}`])), posts: posts.length, comments: posts.reduce((s, p) => s + (p.comments || []).length, 0), errors: posts.filter((p) => p.error).map((p) => p.error.slice(0, 160)) };
+  return { first: firsts, auto, votes: Object.fromEntries(Object.entries(votes).slice(-4).map(([k, v]) => [k, `${v.a}:${v.b}`])), posts: posts.length, comments: posts.reduce((s, p) => s + (p.comments || []).length, 0), errors: [...errors, ...posts.filter((p) => p.error).map((p) => p.error.slice(0, 160))] };
 }
 
 // the filter the replier cannot talk its way around: short, Russian, no links, no mentions, no tags

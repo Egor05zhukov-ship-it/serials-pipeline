@@ -29,6 +29,9 @@ const slotOf = (acc, ymd) => ([0, 6].includes(new Date(ymd + 'T00:00:00Z').getUT
 const dayOf = (e) => (e.scheduledFor || e.publishedAt || '').slice(0, 10);
 const lineOf = (e) => (e.remake ? 'remake' : 'main');
 const plusMin = (at, n) => new Date(Date.parse(at + ':00Z') + n * 60e3).toISOString().slice(0, 16);
+// Instagram locked the account (a «confirm you are human» check, sessions reset after a password change): only the owner
+// can clear that, so the episode is not failed but waits as `ready` and goes out at the next slot after he has.
+const BLOCKED = /disconnect|reconnect|token|log ?in|security|session|checkpoint|password|\b190\b/i;
 const timeOf = (acc, e, ymd) => e.slot || (e.remake ? acc.altSlot || '12:37' : slotOf(acc, ymd));
 
 // The next free day of the episode's line on its account: after the last scheduled or published episode of that line,
@@ -64,20 +67,19 @@ async function run(only, dry) {
     if (!fs.existsSync(video) || !fs.existsSync(cap)) { out.push({ id: e.id, skipped: `no ${path.relative(ROOT, video)} here: build it first` }); continue; }
     if (dry) { out.push({ id: e.id, account: e.account, at }); Object.assign(e, { status: 'scheduled', scheduledFor: at }); continue; }
     const trial = Boolean(e.remake) && q.accounts[e.account].trial !== false;
-    // Our own first comment gives the viewers a place to vote and the comment section is not empty from minute one.
-    // The docs promise firstComment for feed posts; if Zernio refuses it for a Reel (400), the reel goes out without it.
-    const vote = e.choice && !trial && q.firstComment !== false ? `Голосуй здесь: А — ${e.choice.a.toLowerCase()}, Б — ${e.choice.b.toLowerCase()}. Ответь на этот комментарий буквой.` : null;
+    // The account's own first comment («Голосуй здесь…») is posted by publish/comments.mjs once the reel is out:
+    // Zernio's firstComment field is documented for feed posts and carousels only, so it is not sent with a Reel.
     const idem = `${e.id}:${at}:${fs.statSync(video).size}:${Math.round(fs.statSync(video).mtimeMs / 1000)}`; // a rebuilt video is a new post, not a replay of the old request
-    const send = (withVote) => postReel({ accountId, video, cover: fs.existsSync(cover) ? cover : null, caption: fs.readFileSync(cap, 'utf8').trim(), at,
-      idem: withVote ? idem : `${idem}:plain`,
-      // audioName: the reel's sound is called after the series, so every episode is found by one tap on the sound
-      extra: { ...(trial ? { trialParams: { graduationStrategy: 'SS_PERFORMANCE' } } : {}), ...(withVote ? { firstComment: vote } : {}), ...(withVote && e.title ? { audioName: `${e.title} · серия ${e.number}`.slice(0, 60) } : {}) } });
+    const sound = e.seriesName || e.title; // the reel's sound is named after the series instead of «Оригинальная аудиодорожка»
     let r;
-    try { r = await send(Boolean(vote)); } catch (err) {
-      if (!vote || err.status !== 400) throw err;
-      log({ event: 'first-comment-refused', episode: e.id, why: JSON.stringify(err.body || '').slice(0, 200) });
-      q.firstComment = false; // do not try again for the next episodes
-      r = await send(false);
+    try {
+      r = await postReel({ accountId, video, cover: fs.existsSync(cover) ? cover : null, caption: fs.readFileSync(cap, 'utf8').trim(), at, idem,
+        extra: { ...(trial ? { trialParams: { graduationStrategy: 'SS_PERFORMANCE' } } : {}), ...(sound ? { audioName: `${sound} · серия ${e.number}`.slice(0, 60) } : {}) } });
+    } catch (err) { // an account Instagram has locked (security check, sessions reset) must not stop the other account's episode
+      const why = `${err.message} ${JSON.stringify(err.body || '').slice(0, 300)}`;
+      log({ event: BLOCKED.test(why) ? 'account-blocked' : 'schedule-failed', episode: e.id, account: e.account, why });
+      out.push({ id: e.id, account: e.account, error: why.slice(0, 200) });
+      continue;
     }
     Object.assign(e, { status: 'scheduled', scheduledFor: at, zernioPostId: r.post._id, ...(trial ? { trial: true } : {}) });
     // the story teaser of the episode (tools/story.mjs) goes out four minutes after the reel; the owner or a Mac session
@@ -117,10 +119,10 @@ async function sync() {
         q.accounts[e.account].trial = false;
         delete e.trial; delete e.scheduledFor; delete e.zernioPostId; e.status = 'ready';
         log({ event: 'trial-refused', episode: e.id, account: e.account, why });
-      } else if (e.choice && q.firstComment !== false && /comment/i.test(why)) { // the first comment broke the publication: next time without it
-        q.firstComment = false;
-        delete e.scheduledFor; delete e.zernioPostId; e.status = 'ready';
-        log({ event: 'first-comment-refused', episode: e.id, account: e.account, why });
+      } else if (BLOCKED.test(why)) { // the account is locked by Instagram: back to `ready`, the reel itself is fine
+        if (e.storyPostId) await api('DELETE', `/posts/${e.storyPostId}`).catch(() => {});
+        delete e.scheduledFor; delete e.zernioPostId; delete e.storyPostId; e.status = 'ready';
+        log({ event: 'account-blocked', episode: e.id, account: e.account, why });
       } else {
         Object.assign(e, { status: 'failed', failNote: `publication: ${why}` });
         log({ event: 'publish-failed', episode: e.id, account: e.account, why });

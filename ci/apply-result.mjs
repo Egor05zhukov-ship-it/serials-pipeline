@@ -31,6 +31,8 @@ for (const r of Array.isArray(res) ? res : []) {
   const src = fs.readFileSync(file, 'utf8');
   const title = /title:\s*\[([^\]]{1,80})\]/.exec(src);
   if (title) e.title = title[1].replace(/['"`]/g, '').split(',').map((s) => s.trim()).join(' ').slice(0, 60);
+  const sn = /^\s*series:\s*'([^'\n]{2,40})'/m.exec(src); // the series as the viewers read it («Колесо»): the name of the reel's sound
+  if (sn) e.seriesName = sn[1].replace(/[^а-яёА-ЯЁa-zA-Z0-9 -]/g, '').trim();
   const slot = /^\s*slot:\s*['"](1\d|2[0-2]):([0-5]\d)['"]/m.exec(src);
   if (slot) e.slot = `${slot[1]}:${slot[2]}`; else delete e.slot;
   // the viewer's choice at the end of the episode: choice: { a: 'Открыть люк', b: 'Ждать ночи' } (letters, digits, spaces)

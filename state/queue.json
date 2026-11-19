@@ -4,7 +4,7 @@
   "accounts": {
     "ty.by.vyzhil": {
       "name": "Ты бы выжил?",
-      "series": "ubezhishche",
+      "series": "koleso",
       "slots": {
         "weekday": "16:17",
         "weekend": "16:17"
@@ -14,7 +14,7 @@
     },
     "tretye.pravilo": {
       "name": "Третье правило",
-      "series": "spisok",
+      "series": "orbita",
       "slots": {
         "weekday": "20:23",
         "weekend": "20:23"
@@ -134,14 +134,12 @@
       "account": "tretye.pravilo",
       "number": 2,
       "title": "ТРИ ЧАСА НОЧИ",
-      "status": "scheduled",
+      "status": "shelved",
       "out": "out/spisok-ep02",
       "builtAt": "2026-11-18 20:01",
       "builtOn": "github",
       "seconds": 73,
-      "scheduledFor": "2026-11-19T18:07",
-      "zernioPostId": "6afdda029ab1f0999ab81492",
-      "storyPostId": "6afdeb13a8644b450d482deb"
+      "shelvedNote": "19.11: владелец утвердил формат 4 («Колесо», «Орбита»); серия старого формата снята с эфира 18:07, файлы на месте. Вернуть: status ready."
     },
     {
       "id": "ubezhishche-ep03",
@@ -149,19 +147,53 @@
       "account": "ty.by.vyzhil",
       "number": 3,
       "title": "ЗАПИСКА",
-      "status": "scheduled",
+      "status": "shelved",
       "out": "out/ubezhishche-ep03",
       "builtAt": "2026-11-18 20:01",
       "builtOn": "github",
       "seconds": 60,
-      "scheduledFor": "2026-11-19T18:07",
-      "zernioPostId": "6afdda079ab1f0999ab814ac",
-      "storyPostId": "6afdeb0f4fba6b1555c88c76"
+      "shelvedNote": "19.11: владелец утвердил формат 4 («Колесо», «Орбита»); серия старого формата снята с эфира 18:07, файлы на месте. Вернуть: status ready."
+    },
+    {
+      "id": "koleso-ep01",
+      "series": "koleso",
+      "account": "ty.by.vyzhil",
+      "number": 1,
+      "title": "КОЛЕСО",
+      "seriesName": "Колесо",
+      "status": "scheduled",
+      "out": "out/koleso-ep01",
+      "builtAt": "2026-11-19 01:35",
+      "builtOn": "mac",
+      "seconds": 56,
+      "approved": "19.11.2026: владелец утвердил пилот",
+      "choice": {
+        "a": "Выйти на крышу",
+        "b": "Ждать ночи"
+      },
+      "scheduledFor": "2026-11-19T16:17",
+      "zernioPostId": "6afeaa79b32844ddd5aa6ed1",
+      "storyPostId": "6afeaa8f8e3d7f18cda9b1ff"
+    },
+    {
+      "id": "orbita-ep01",
+      "series": "orbita",
+      "account": "tretye.pravilo",
+      "number": 1,
+      "title": "ОРБИТА",
+      "seriesName": "Орбита",
+      "status": "ready",
+      "out": "out/orbita-ep01",
+      "builtAt": "2026-11-19 01:48",
+      "builtOn": "mac",
+      "seconds": 49,
+      "approved": "19.11.2026: владелец утвердил пилот",
+      "choice": {
+        "a": "Открыть люк",
+        "b": "Затаиться"
+      }
     }
   ],
   "schedulePlan": "С 19.11: @ty.by.vyzhil каждый день в 16:17, @tretye.pravilo в 20:23 (по времени хитов у образцов: 16:00-16:45 и 20:00-20:40). Серия пишется после голосования зрителей под предыдущей, запаса на завтра нет.",
-  "hold": [
-    "koleso",
-    "orbita"
-  ]
+  "hold": []
 }

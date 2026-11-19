@@ -19,10 +19,20 @@ for (const [nick, a] of Object.entries(q.accounts)) {
   if (!eps.some((e) => on(e) || ['ready', 'written'].includes(e.status))) empty.push(nick);
 }
 const failed = q.episodes.filter((e) => e.status === 'failed').map((e) => `${e.id}: ${String(e.failNote || '').slice(0, 200)}`);
-console.log(JSON.stringify({ today, tomorrow, empty, failed }));
+// accounts Instagram has locked (publish/health.mjs): reels cannot go out until the owner clears the check himself
+let health = {};
+try { health = JSON.parse(fs.readFileSync('state/health.json', 'utf8')).accounts || {}; } catch { /* no check yet */ }
+const WHY = {
+  check: 'Instagram просит войти в аккаунт и пройти проверку («подтвердите, что вы человек»), затем переподключить его к сервису публикации',
+  reconnect: 'Instagram сбросил вход (смена пароля или проверка безопасности): войти в аккаунт и переподключить его к сервису публикации',
+  error: 'сервис публикации не может работать с аккаунтом: открыть сессию Claude на Маке и написать «проверь аккаунты»',
+};
+const blocked = Object.entries(health).filter(([n, v]) => v && v.ok === false && q.accounts[n] && !q.accounts[n].paused).map(([n, v]) => `@${n}: ${WHY[v.code] || WHY.error} (с ${v.since})`);
+console.log(JSON.stringify({ today, tomorrow, empty, failed, blocked }));
 
-// exit code 3 = «nothing today» at the evening check: ci/run.sh then fails the scheduled run and GitHub mails the owner
-const code = empty.length && new Date().getUTCHours() >= 14 ? 3 : 0;
+// exit code 3 = «nothing today» at the evening check, or a locked account at any check: ci/run.sh then fails the
+// scheduled run and GitHub mails the owner
+const code = (empty.length && new Date().getUTCHours() >= 14) || blocked.length ? 3 : 0;
 const token = process.env.GH_TOKEN, repo = process.env.GITHUB_REPOSITORY;
 if (!token || !repo) process.exit(code);
 const gh = async (method, path, body) => {
@@ -40,6 +50,7 @@ if (empty.length) {
       'Автор серий не прислал серию после вчерашнего голосования. Чаще всего причина в том, что облачные задачи Claude (serials-writer, serials-replier) остались на другом аккаунте Claude или кончился лимит.',
       'Что сделать: открыть сессию Claude на Маке и написать «проверь автономность» — задачи пересоздаются, автор запускается вручную.',
       failed.length ? `\nСерии, которые не собрались:\n- ${failed.join('\n- ')}` : '',
+      blocked.length ? `\nInstagram закрыл доступ, пока владелец не пройдёт проверку сам:\n- ${blocked.join('\n- ')}` : '',
     ].join('\n');
     const i = await gh('POST', '/issues', { title: `${TITLE} (${short(tomorrow)})`, body });
     console.log(`issue opened: ${i.html_url}`);

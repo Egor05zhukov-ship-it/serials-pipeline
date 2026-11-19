@@ -5,6 +5,9 @@
 #   bash ci/run.sh publish   trusted code of main only: merges the writer's branch, takes the built files, puts
 #                            episodes on the air plan through Zernio (secret ZERNIO_API_KEY), commits state to main.
 # TASK: branch (a push to claude/**, BRANCH is set) | build (episodes of main: ARG or every "written") | selftest | sync | probe
+#       | comments (the quick round between the full syncs: is the reel out, the account's first comment under it, a
+#         ready-made answer to plain votes, the replier's answers). A push to claude/sync-* asks for the same round:
+#         that is how the replier gets fresh comments before it answers.
 # Voice settings of the cloud: ci/tts.env (QWEN_SIZE, QWEN_DTYPE).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -45,6 +48,7 @@ if [ "$STAGE" = build ]; then
     exit 0
   fi
   T0=$SECONDS
+  if [ "$TASK" = branch ] && [[ "${BRANCH:-}" =~ ^claude/sync ]]; then say "sync request: nothing to build"; exit 0; fi
   if [ "$TASK" = branch ]; then
     fetch_branch || { say "branch refused: $WHY"; exit 0; }
     merge_branch || { say "branch refused: $WHY"; exit 0; }
@@ -118,6 +122,16 @@ if [ "$TASK" = selftest ]; then
   exit 0
 fi
 
+if [ "$TASK" = comments ] || { [ "$TASK" = branch ] && [[ "${BRANCH:-}" =~ ^claude/sync[A-Za-z0-9._/-]*$ ]]; }; then
+  node publish/schedule.mjs sync | tee -a "$REPORT" || say "sync: failed, see above"
+  node publish/comments.mjs fetch | tee -a "$REPORT" || say "comments fetch: failed"
+  node publish/comments.mjs send | tee -a "$REPORT" || say "comments send: failed"
+  # every step is safe to repeat (Instagram itself shows what is answered), so a lost push only waits for the next round
+  push_main "pipeline: comments" || say "state not saved this time, the next round repeats it"
+  [ "$TASK" = branch ] && git push -q origin --delete "$BRANCH" 2>/dev/null || true
+  exit 0
+fi
+
 MERGED=""
 if [ "$TASK" = branch ]; then
   if fetch_branch && merge_branch; then MERGED=1; say "merged $BRANCH: $(echo $CHANGED | cut -c1-300)"
@@ -126,11 +140,12 @@ fi
 node ci/apply-result.mjs | tee -a "$REPORT"
 node publish/schedule.mjs run | tee -a "$REPORT" || say "schedule: failed, see above"
 node publish/schedule.mjs sync | tee -a "$REPORT" || say "sync: failed, see above"
+node publish/health.mjs | tee -a "$REPORT" || say "health: failed (does not stop publishing)"
 node publish/stats.mjs | tee -a "$REPORT" || say "stats: failed (does not stop publishing)"
 node publish/comments.mjs fetch | tee -a "$REPORT" || say "comments fetch: failed (does not stop publishing)"
 node publish/comments.mjs send | tee -a "$REPORT" || say "comments send: failed (does not stop publishing)"
 push_main "pipeline: ${TASK}${BRANCH:+ $BRANCH}" || { say "could not push state to main"; exit 1; }
 [ -n "$MERGED" ] && git push -q origin --delete "$BRANCH" 2>/dev/null || true
 set +e; node ci/watchdog.mjs | tee -a "$REPORT"; wd=${PIPESTATUS[0]}; set -e
-if [ "$wd" = 3 ] && [ "$TASK" = sync ]; then say "WATCHDOG: an account has no episode for tomorrow; this run fails on purpose so that GitHub mails the owner"; exit 1; fi
+if [ "$wd" = 3 ] && [ "$TASK" = sync ]; then say "WATCHDOG: an account has no episode today or Instagram has locked it (see the line above); this run fails on purpose so that GitHub mails the owner"; exit 1; fi
 exit 0
