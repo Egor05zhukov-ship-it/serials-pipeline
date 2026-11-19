@@ -173,7 +173,7 @@
       "number": 1,
       "title": "КОЛЕСО",
       "seriesName": "Колесо",
-      "status": "ready",
+      "status": "scheduled",
       "out": "out/koleso-ep01",
       "builtAt": "2026-11-19 01:35",
       "builtOn": "mac",
@@ -191,7 +191,10 @@
         "uploadedAt": "2026-11-19T08:59:55.291Z"
       },
       "tries": 1,
-      "notBefore": "2026-11-20"
+      "notBefore": "2026-11-20",
+      "scheduledFor": "2026-11-20T16:17",
+      "zernioPostId": "6afecf21624f3494c166f77c",
+      "storyPostId": "6afecf23329e928fb74dff9a"
     },
     {
       "id": "orbita-ep01",

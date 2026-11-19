@@ -3,8 +3,9 @@
   "profileId": "6afb30fc9779b2ad3041c95e",
   "accounts": {
     "acc3": {
-      "accountId": null,
-      "userHash": "80967260c1d0cae7"
+      "accountId": "6afeced18daf11fffa89fccf",
+      "userHash": "21878dabebc24286",
+      "connectedAt": "2026-11-19T10:27:43Z"
     }
   }
 }
