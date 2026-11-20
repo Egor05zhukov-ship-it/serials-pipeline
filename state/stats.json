@@ -7,7 +7,7 @@
   "slot": "2026-11-17T18:07",
   "publishedAt": "2026-11-17T15:08:46.146Z",
   "latest": {
-   "hours": 57.62,
+   "hours": 72.59,
    "views": 2400,
    "reach": 2009,
    "likes": 31,
@@ -37,6 +37,22 @@
    "watched": 0.51,
    "skipRate": 34.9,
    "updated": "2026-11-18T16:47:07Z"
+  },
+  "day3": {
+   "hours": 72.59,
+   "views": 2400,
+   "reach": 2009,
+   "likes": 31,
+   "comments": 4,
+   "shares": 0,
+   "saves": 8,
+   "follows": null,
+   "profileViews": 0,
+   "avgWatch": 44.02,
+   "duration": 86,
+   "watched": 0.51,
+   "skipRate": 34.9,
+   "updated": "2026-11-19T04:10:37Z"
   }
  },
  "ubezhishche-ep02": {
@@ -47,7 +63,7 @@
   "slot": "2026-11-18T18:07",
   "publishedAt": "2026-11-18T15:08:53.258Z",
   "latest": {
-   "hours": 33.62,
+   "hours": 48.58,
    "views": 811,
    "reach": 700,
    "likes": 7,
@@ -87,7 +103,7 @@
   "slot": "2026-11-17T18:07",
   "publishedAt": "2026-11-17T15:09:05.903Z",
   "latest": {
-   "hours": 57.61,
+   "hours": 72.58,
    "views": 131,
    "reach": 110,
    "likes": 4,
@@ -117,6 +133,22 @@
    "watched": 0.35,
    "skipRate": 38.2,
    "updated": "2026-11-18T17:14:06Z"
+  },
+  "day3": {
+   "hours": 72.58,
+   "views": 131,
+   "reach": 110,
+   "likes": 4,
+   "comments": 0,
+   "shares": 0,
+   "saves": 0,
+   "follows": null,
+   "profileViews": 0,
+   "avgWatch": 29.57,
+   "duration": 86,
+   "watched": 0.34,
+   "skipRate": 38.2,
+   "updated": "2026-11-18T20:57:51Z"
   }
  },
  "_accounts": {
