@@ -7,7 +7,7 @@
   "slot": "2026-11-17T18:07",
   "publishedAt": "2026-11-17T15:08:46.146Z",
   "latest": {
-   "hours": 72.59,
+   "hours": 95.76,
    "views": 2400,
    "reach": 2009,
    "likes": 31,
@@ -63,7 +63,7 @@
   "slot": "2026-11-18T18:07",
   "publishedAt": "2026-11-18T15:08:53.258Z",
   "latest": {
-   "hours": 48.58,
+   "hours": 71.76,
    "views": 811,
    "reach": 700,
    "likes": 7,
@@ -93,6 +93,22 @@
    "watched": 0.35,
    "skipRate": 36.2,
    "updated": "2026-11-19T04:10:37Z"
+  },
+  "day3": {
+   "hours": 71.76,
+   "views": 811,
+   "reach": 700,
+   "likes": 7,
+   "comments": 0,
+   "shares": 0,
+   "saves": 1,
+   "follows": null,
+   "profileViews": 0,
+   "avgWatch": 26.93,
+   "duration": 76,
+   "watched": 0.35,
+   "skipRate": 36.2,
+   "updated": "2026-11-19T04:10:37Z"
   }
  },
  "spisok-ep01": {
@@ -103,7 +119,7 @@
   "slot": "2026-11-17T18:07",
   "publishedAt": "2026-11-17T15:09:05.903Z",
   "latest": {
-   "hours": 72.58,
+   "hours": 95.76,
    "views": 131,
    "reach": 110,
    "likes": 4,
@@ -167,6 +183,10 @@
   "acc3": [
    {
     "date": "2026-11-20",
+    "followers": 0
+   },
+   {
+    "date": "2026-11-21",
     "followers": 0
    }
   ]
