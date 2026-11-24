@@ -1,9 +1,9 @@
 {
- "changedAt": "2026-11-19 16:49",
+ "changedAt": "2026-11-24 18:46",
  "accounts": {
   "acc3": {
    "ok": false,
-   "code": "reconnect",
+   "code": "check",
    "since": "2026-11-19 16:49"
   }
  }
