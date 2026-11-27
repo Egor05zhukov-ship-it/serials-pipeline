@@ -7,7 +7,7 @@
   "slot": "2026-11-17T18:07",
   "publishedAt": "2026-11-17T15:08:46.146Z",
   "latest": {
-   "hours": 218.13,
+   "hours": 241.81,
    "views": 2400,
    "reach": 2009,
    "likes": 31,
@@ -63,7 +63,7 @@
   "slot": "2026-11-18T18:07",
   "publishedAt": "2026-11-18T15:08:53.258Z",
   "latest": {
-   "hours": 194.13,
+   "hours": 217.81,
    "views": 811,
    "reach": 700,
    "likes": 7,
@@ -119,7 +119,7 @@
   "slot": "2026-11-17T18:07",
   "publishedAt": "2026-11-17T15:09:05.903Z",
   "latest": {
-   "hours": 218.12,
+   "hours": 241.8,
    "views": 131,
    "reach": 110,
    "likes": 4,
@@ -207,6 +207,10 @@
    },
    {
     "date": "2026-11-26",
+    "followers": 0
+   },
+   {
+    "date": "2026-11-27",
     "followers": 0
    }
   ]
